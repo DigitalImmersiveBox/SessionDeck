@@ -1,0 +1,436 @@
+﻿<Window x:Class="ClaudeSessions.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ClaudeSessions"
+        Title="Session Deck" Width="980" Height="760" MinWidth="340" MinHeight="300"
+        Background="#141518" Foreground="#E6E7EA" FontFamily="Segoe UI" FontSize="13"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="Vis"/>
+    <FontFamily x:Key="Icons">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+    <Style x:Key="Chip" TargetType="RadioButton" BasedOn="{StaticResource ChipToggle}">
+      <Setter Property="GroupName" Value="range"/>
+    </Style>
+
+    <Style x:Key="IconButton" TargetType="ButtonBase">
+      <Setter Property="Foreground" Value="#A9ACB4"/>
+      <Setter Property="FontFamily" Value="{StaticResource Icons}"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Width" Value="32"/>
+      <Setter Property="Height" Value="30"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ButtonBase">
+            <Border x:Name="Bg" Background="Transparent" CornerRadius="6">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Background" Value="#24262B"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+              </Trigger>
+              <Trigger Property="ToggleButton.IsChecked" Value="True">
+                <Setter TargetName="Bg" Property="Background" Value="#30333A"/>
+                <Setter Property="Foreground" Value="#60A5FA"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="ProjectButton" TargetType="Button">
+      <Setter Property="Foreground" Value="#B9BCC4"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bg" Background="Transparent" CornerRadius="6" Padding="10,7">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Background" Value="#24262B"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Bg" Property="Background" Value="#30333A"/>
+              </Trigger>
+              <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                <Setter TargetName="Bg" Property="Background" Value="#24324A"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+              </DataTrigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="Card" TargetType="Border">
+      <Setter Property="Background" Value="#1D1F24"/>
+      <Setter Property="BorderBrush" Value="#292C33"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Margin" Value="4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter Property="Background" Value="#23262C"/>
+          <Setter Property="BorderBrush" Value="#3A3E47"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style TargetType="ScrollBar">
+      <Setter Property="Width" Value="8"/>
+      <Setter Property="MinWidth" Value="8"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ScrollBar">
+            <Track x:Name="PART_Track" IsDirectionReversed="True">
+              <Track.Thumb>
+                <Thumb>
+                  <Thumb.Template>
+                    <ControlTemplate TargetType="Thumb">
+                      <Border Background="#3A3D45" CornerRadius="4" Margin="1,0"/>
+                    </ControlTemplate>
+                  </Thumb.Template>
+                </Thumb>
+              </Track.Thumb>
+            </Track>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <DockPanel>
+    <!-- Header: summary, time range, actions -->
+    <Border DockPanel.Dock="Top" Padding="16,12,10,10" BorderBrush="#22252A" BorderThickness="0,0,0,1">
+      <StackPanel>
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+            <ToggleButton x:Name="WidgetButton" Style="{StaticResource IconButton}" Content="&#xE7F4;"
+                          ToolTip="Usage widget: a small always-on window with your limits and active sessions"
+                          Checked="Widget_Changed" Unchecked="Widget_Changed"/>
+            <ToggleButton x:Name="TokensButton" Style="{StaticResource IconButton}" Content="&#xEB05;"
+                          ToolTip="Tokens: how many tokens each project and session used in this time range"
+                          Checked="Tokens_Changed" Unchecked="Tokens_Changed"/>
+            <ToggleButton x:Name="ProjectsButton" Style="{StaticResource IconButton}" Content="&#xE8B7;"
+                          ToolTip="Projects: filter by project or start a new session"
+                          Checked="Projects_Changed" Unchecked="Projects_Changed"/>
+            <Button Style="{StaticResource IconButton}" Content="&#xE73E;" ToolTip="Mark all finished sessions as seen (questions stay until you answer)" Click="MarkAllSeen_Click"/>
+            <ToggleButton x:Name="PinButton" Style="{StaticResource IconButton}" Content="&#xE718;" ToolTip="Always on top"
+                          Checked="Pin_Changed" Unchecked="Pin_Changed"/>
+            <Button Style="{StaticResource IconButton}" Content="&#xE7FC;" ToolTip="Runner: a little game with your mascot while sessions work"
+                    Click="Game_Click"/>
+            <Button Style="{StaticResource IconButton}" Content="&#xE713;" ToolTip="Settings: weather city, °C or °F, and the mascot"
+                    Click="Settings_Click"/>
+          </StackPanel>
+          <StackPanel DockPanel.Dock="Left">
+            <TextBlock Text="Session Deck" FontSize="17" FontWeight="SemiBold"/>
+            <TextBlock x:Name="Summary" Margin="0,3,0,0" FontSize="12" Foreground="#A9ACB4"/>
+          </StackPanel>
+          <!-- Today at a glance, from the session logs; shortens with "…" before it crowds the buttons -->
+          <Border x:Name="TodayBlock" Margin="32,2,16,0" Padding="16,0,0,0" BorderBrush="#2A2D33" BorderThickness="1,0,0,0"
+                  VerticalAlignment="Top" HorizontalAlignment="Left">
+            <StackPanel>
+              <TextBlock TextTrimming="CharacterEllipsis"
+                         ToolTip="Time Claude spent working since midnight, added up across sessions (sessions running at the same time add up)">
+                <Run Text="TODAY" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"/>
+                <Run x:Name="TodayWorked" FontSize="13" Foreground="#E6E7EA"/>
+              </TextBlock>
+              <TextBlock x:Name="TodayProjects" FontSize="11.5" Foreground="#A9ACB4" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+          </Border>
+        </DockPanel>
+        <DockPanel Margin="-4,10,0,0">
+          <ToggleButton x:Name="HideDoneButton" DockPanel.Dock="Right" Style="{StaticResource ChipToggle}" Margin="0,0,4,0"
+                        ToolTip="Hide finished sessions you've already checked (unchecked ones stay)" Checked="HideDone_Changed" Unchecked="HideDone_Changed">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="&#xED1A;" FontFamily="{StaticResource Icons}" FontSize="12" VerticalAlignment="Center" Margin="0,1,6,0"/>
+              <TextBlock Text="Hide done"/>
+            </StackPanel>
+          </ToggleButton>
+          <StackPanel Orientation="Horizontal">
+            <RadioButton Style="{StaticResource Chip}" Content="2 h" Tag="2" Checked="Range_Checked"/>
+            <RadioButton Style="{StaticResource Chip}" Content="8 h" Tag="8" Checked="Range_Checked"/>
+            <RadioButton Style="{StaticResource Chip}" Content="24 h" Tag="24" Checked="Range_Checked"/>
+            <RadioButton Style="{StaticResource Chip}" Content="3 days" Tag="72" Checked="Range_Checked"/>
+            <RadioButton Style="{StaticResource Chip}" Content="7 days" Tag="168" Checked="Range_Checked"/>
+          </StackPanel>
+        </DockPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Usage banner: Clawd's world across the full width, plan limits and Claude status on the left -->
+    <Grid x:Name="Banner" DockPanel.Dock="Top" Height="104" Background="#17181C" ClipToBounds="True"
+          SizeChanged="Banner_SizeChanged">
+      <Border BorderBrush="#22252A" BorderThickness="0,0,0,1"/>
+      <local:PixelScene x:Name="BannerScene" Margin="0,0,0,1"/>
+      <StackPanel x:Name="BannerText" Orientation="Horizontal" Margin="16,10,16,12" HorizontalAlignment="Left" VerticalAlignment="Center">
+        <StackPanel MinWidth="118" VerticalAlignment="Center">
+          <TextBlock Text="5-HOUR LIMIT" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"/>
+          <StackPanel x:Name="BannerFigure" Orientation="Horizontal" Margin="-2,-5,0,-5">
+            <TextBlock x:Name="BannerPercent" FontFamily="Segoe UI Light" FontSize="42"/>
+            <TextBlock Text="%" FontFamily="Segoe UI Light" FontSize="18" Foreground="#C9CACF" VerticalAlignment="Top" Margin="4,9,0,0"/>
+          </StackPanel>
+          <TextBlock x:Name="BannerReset" FontSize="11.5" Foreground="#A9ACB4" MaxWidth="230" TextWrapping="Wrap"/>
+        </StackPanel>
+        <StackPanel Width="190" Margin="24,0,0,0" VerticalAlignment="Center">
+          <ItemsControl x:Name="BannerWeeks" Focusable="False">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="{x:Type local:WeekRow}">
+                <StackPanel Margin="0,0,0,8">
+                  <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding Figure}" FontSize="11" Foreground="#A9ACB4"/>
+                    <TextBlock Text="{Binding Label}" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"/>
+                  </DockPanel>
+                  <Grid Height="5" Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="{Binding Fill}"/>
+                      <ColumnDefinition Width="{Binding Rest}"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.ColumnSpan="2" Background="#33363D" CornerRadius="2.5"/>
+                    <Border Background="#C9CACF" CornerRadius="2.5"/>
+                  </Grid>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <StackPanel Orientation="Horizontal">
+            <Ellipse x:Name="BannerStatusDot" Width="7" Height="7" VerticalAlignment="Center" Fill="#6B707B"/>
+            <TextBlock x:Name="BannerStatus" FontSize="11.5" Foreground="#A9ACB4" Margin="7,0,0,1"
+                       MaxWidth="180" TextTrimming="CharacterEllipsis"/>
+          </StackPanel>
+        </StackPanel>
+
+        <!-- 5-hour use over the last 12 h, and where this pace is heading -->
+        <StackPanel x:Name="BannerChart" Width="185" Margin="24,0,0,0" VerticalAlignment="Center">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="last 12 h" FontSize="11" Foreground="#6E717B"/>
+            <TextBlock Text="5-HOUR USE" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"/>
+          </DockPanel>
+          <local:Sparkline x:Name="BannerSpark" Height="30" Margin="0,6,0,5"
+                           ToolTip="Your 5-hour limit use over the last 12 hours (dashed lines: 0 % and 100 %)"/>
+          <TextBlock x:Name="BannerForecast" FontSize="11.5" Foreground="#A9ACB4" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+      </StackPanel>
+
+      <!-- Local weather, compact in the top-right corner; Clawd walks underneath it -->
+      <Border x:Name="BannerWeather" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,12,0"
+              Padding="10,5,10,6" CornerRadius="6" Background="#E617181C">
+        <Border.ContextMenu>
+          <ContextMenu Opened="WeatherMenu_Opened">
+            <MenuItem Header="Change city…" Click="ChangeCity_Click"/>
+            <MenuItem x:Name="UseDetectedItem" Header="Use my approximate location" Click="UseDetected_Click"/>
+          </ContextMenu>
+        </Border.ContextMenu>
+        <StackPanel>
+          <TextBlock x:Name="WeatherCity" FontSize="10.5" FontWeight="SemiBold" Foreground="#7D808A" HorizontalAlignment="Right"
+                     MaxWidth="200" TextTrimming="CharacterEllipsis" Text="WEATHER"/>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,1,0,0">
+            <TextBlock x:Name="WeatherIcon" FontFamily="Segoe UI Symbol" FontSize="14" VerticalAlignment="Center" Foreground="#C9CACF"/>
+            <TextBlock x:Name="WeatherTemp" FontSize="15" Margin="5,0,0,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="WeatherText" FontSize="11" Foreground="#A9ACB4" Margin="8,1,0,0" VerticalAlignment="Center"
+                       MaxWidth="170" TextTrimming="CharacterEllipsis"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Credits: dib logo and maker line in the bottom-left corner, under the projects and the cards -->
+    <Border DockPanel.Dock="Bottom" Padding="16,6,16,7" BorderBrush="#22252A" BorderThickness="0,1,0,0">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+        <Path Height="11" Stretch="Uniform" Fill="#8A8D96" VerticalAlignment="Center"
+              Data="{StaticResource DibLogo}"/>
+        <TextBlock Text="made by Digital Immersive Box" FontSize="11" Foreground="#7D808A"
+                   Margin="8,0,0,1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+      </StackPanel>
+    </Border>
+
+    <!-- Projects: click a name to show only its sessions; + starts a new Claude session there -->
+    <Border x:Name="ProjectsPanel" DockPanel.Dock="Left" Width="220" BorderBrush="#22252A" BorderThickness="0,0,1,0"
+            Background="#121316">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="PROJECTS" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"
+                   Margin="16,14,12,6"/>
+        <ToggleButton x:Name="ShowHiddenButton" DockPanel.Dock="Bottom" Style="{StaticResource ChipToggle}"
+                      HorizontalAlignment="Left" Margin="12,6,12,10" Visibility="Collapsed"
+                      ToolTip="Show the projects you hid (right-click one to show it again)"
+                      Checked="ShowHidden_Changed" Unchecked="ShowHidden_Changed"/>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="ProjectList">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid Margin="6,1,4,1" Opacity="{Binding RowOpacity}"
+                      ContextMenuService.IsEnabled="{Binding CanStart}">
+                  <Grid.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="{Binding HideMenuText}" Click="HideProject_Click"/>
+                      <MenuItem Header="New Claude session here" Click="NewSession_Click"/>
+                      <MenuItem Header="Open folder" Click="ProjectFolder_Click"/>
+                      <Separator/>
+                      <MenuItem Header="Change icon…" Click="ChangeIcon_Click"/>
+                      <MenuItem Header="Use generated icon" Click="GeneratedIcon_Click"
+                                Visibility="{Binding CanUseGenerated, Converter={StaticResource Vis}}"/>
+                      <MenuItem Header="Reset icon" Click="ResetIcon_Click"
+                                Visibility="{Binding CanResetIcon, Converter={StaticResource Vis}}"/>
+                    </ContextMenu>
+                  </Grid.ContextMenu>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Button Style="{StaticResource ProjectButton}" ToolTip="{Binding Tooltip}" Click="Project_Click">
+                    <DockPanel>
+                      <TextBlock DockPanel.Dock="Right" Text="{Binding CountText}" FontSize="11" Foreground="#7D808A"
+                                 VerticalAlignment="Center" Margin="8,0,0,0"/>
+                      <Grid DockPanel.Dock="Left" Width="18" Height="18" Margin="0,0,9,0" VerticalAlignment="Center">
+                        <Image Source="{Binding Icon}" ToolTip="{Binding IconTooltip}"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <TextBlock Text="&#xE8A9;" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="#7D808A"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="{Binding IsAll, Converter={StaticResource Vis}}"/>
+                      </Grid>
+                      <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                        <Run Text="{Binding Name, Mode=OneWay}"/>
+                        <Run Text="{Binding Detail, Mode=OneWay}" FontSize="11" Foreground="#6E717B"/>
+                      </TextBlock>
+                    </DockPanel>
+                  </Button>
+                  <Button Grid.Column="1" Style="{StaticResource IconButton}" Width="28" Height="30" FontSize="11"
+                          Content="&#xE710;" ToolTip="{Binding NewTooltip}" Click="NewSession_Click"
+                          Visibility="{Binding CanStart, Converter={StaticResource Vis}}"/>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <Grid>
+      <!-- Transparent so the gaps between cards count as "over the cards" (the order holds still there too) -->
+      <ScrollViewer x:Name="CardScroller" VerticalScrollBarVisibility="Auto" Padding="8,8,8,8"
+                    Background="Transparent" MouseLeave="Cards_MouseLeave">
+        <ItemsControl x:Name="List" SizeChanged="List_SizeChanged">
+          <!-- One grid of cards, most urgent first; column count follows the window width -->
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid VerticalAlignment="Top"
+                           Columns="{Binding Columns, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Style="{StaticResource Card}" Opacity="{Binding CardOpacity}" ToolTip="{Binding Tooltip}"
+                      ToolTipService.InitialShowDelay="900" MouseLeftButtonUp="Card_Click">
+                <Border.ContextMenu>
+                  <ContextMenu>
+                    <MenuItem Header="Open in Claude" Click="Open_Click"/>
+                    <MenuItem Header="Open project folder" Click="Folder_Click"/>
+                    <MenuItem Header="Mark as seen" Click="Seen_Click"
+                              Visibility="{Binding CanMarkSeen, Converter={StaticResource Vis}}"/>
+                    <MenuItem Header="Dismiss question (I won't answer it)" Click="Dismiss_Click"
+                              Visibility="{Binding CanDismiss, Converter={StaticResource Vis}}"/>
+                  </ContextMenu>
+                </Border.ContextMenu>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition/>
+                  </Grid.ColumnDefinitions>
+                  <!-- The status stripe; it widens to hold the project's icon when there is one -->
+                  <Border CornerRadius="7,0,0,7">
+                    <Border.Style>
+                      <Style TargetType="Border">
+                        <Setter Property="Background" Value="{Binding StatusBrush}"/>
+                        <Setter Property="Width" Value="4"/>
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding HasProjectIcon}" Value="True">
+                            <Setter Property="Width" Value="50"/>
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Border.Style>
+                    <!-- Icon files get a dark tile, so a white or green logo still shows on the stripe -->
+                    <Border Width="36" Height="36" CornerRadius="8" VerticalAlignment="Top" Margin="0,9,0,0"
+                            Visibility="{Binding HasProjectIcon, Converter={StaticResource Vis}}">
+                      <Border.Style>
+                        <Style TargetType="Border">
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding ProjectIconBacked}" Value="True">
+                              <Setter Property="Background" Value="#1D1F24"/>
+                              <Setter Property="Padding" Value="5"/>
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </Border.Style>
+                      <Image Source="{Binding ProjectIcon}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </Border>
+                  </Border>
+                  <StackPanel Grid.Column="1" Margin="12,10,12,11">
+                    <DockPanel>
+                      <TextBlock DockPanel.Dock="Right" Text="{Binding AgoText}" Foreground="#7D808A" FontSize="11"
+                                 VerticalAlignment="Center" Margin="8,0,0,0"/>
+                      <TextBlock Text="{Binding Project}" FontSize="11" FontWeight="SemiBold" Foreground="#9A9DA6"
+                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,6,0,0">
+                      <Border Background="{Binding StatusBrush}" CornerRadius="9" Padding="7,1,7,2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding StatusText}" FontSize="11" FontWeight="SemiBold" Foreground="#111215"/>
+                      </Border>
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="8,0,0,0"
+                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock Text="{Binding Activity}" Visibility="{Binding HasActivity, Converter={StaticResource Vis}}"
+                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="54"
+                               Margin="0,7,0,0" Foreground="#D9DBE0"/>
+                    <DockPanel Margin="0,8,0,0" Visibility="{Binding HasPlan, Converter={StaticResource Vis}}">
+                      <TextBlock DockPanel.Dock="Right" Text="{Binding PlanText}" FontSize="11" Foreground="#8A8D96" Margin="8,0,0,0"/>
+                      <ProgressBar Value="{Binding PlanProgress, Mode=OneWay}" Maximum="1" Height="4" VerticalAlignment="Center"
+                                   Background="#2B2E35" Foreground="{Binding StatusBrush}" BorderThickness="0"/>
+                    </DockPanel>
+                    <TextBlock Text="{Binding Detail}" Visibility="{Binding HasDetail, Converter={StaticResource Vis}}"
+                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="50"
+                               Margin="0,6,0,0" Foreground="#8E919A" FontSize="12"/>
+                    <TextBlock Margin="0,6,0,0" FontSize="11" Foreground="#6E717B" TextTrimming="CharacterEllipsis"
+                               Visibility="{Binding HasBranch, Converter={StaticResource Vis}}">
+                      <Run Text="branch" Foreground="#555861"/>
+                      <Run Text="{Binding Branch, Mode=OneWay}"/>
+                    </TextBlock>
+                    <!-- MCP servers this session used, most used first -->
+                    <ItemsControl ItemsSource="{Binding McpChips}" Margin="0,8,0,-4" Focusable="False"
+                                  Visibility="{Binding HasMcps, Converter={StaticResource Vis}}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel/>
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Border Background="#262930" BorderBrush="#30343C" BorderThickness="1" CornerRadius="4"
+                                  Padding="6,1,6,2" Margin="0,0,4,4">
+                            <TextBlock Text="{Binding}" FontSize="10.5" Foreground="#A9ACB4"/>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+      <TextBlock x:Name="EmptyText" Text="No sessions to show in this time range." TextAlignment="Center"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#6E717B" Visibility="Collapsed"/>
+      <!-- Token charts, in the cards' place while the tokens button is on -->
+      <local:TokenView x:Name="Tokens" Visibility="Collapsed"/>
+    </Grid>
+  </DockPanel>
+</Window>

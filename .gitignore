@@ -1,0 +1,27 @@
+# Build output
+bin/
+obj/
+publish/
+release/
+artifacts/
+*.pdb
+
+# Offscreen renders from the app's debug flags
+snapshots/
+signatures/
+stories/
+runner/
+token-charts/
+project-icons.png
+sessions-dump.json
+
+# IDE and OS
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.DotSettings.user
+Thumbs.db
+desktop.ini
+.DS_Store

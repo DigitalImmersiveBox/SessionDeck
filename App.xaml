@@ -1,0 +1,60 @@
+<Application x:Class="ClaudeSessions.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+  <Application.Resources>
+    <!-- dib logo (Digital Immersive Box), traced from the brand SVG; used in the dashboard footer and the widget -->
+    <Geometry x:Key="DibLogo">F1 M 827.61 835.6 c 0 -69.98 0.74 -276.22 1.21 -292.66 l -216.85 1.35 c -145.77 1.25 -315.56 32.94 -427.13 114.56 C 69 743.6 9.15 849.31 6.37 1068.16 0.76 1508.98 0.51 1656.21 0.51 1656.35 h 1160.59 s 240.86 -37.56 252.32 -524.53 c 11.46 -486.97 6.98 -1125.45 6.98 -1125.45 0 0 -327.75 -0.58 -394.91 0 -73.84 0.64 -67.98 60.53 -67.98 60.53 l -5.28 1052.51 s 1.61 186.17 -205.16 228.77 c -42.49 8.75 -299 1.46 -299 1.46 l -1.91 -198.61 c -2.39 -369.53 381.46 -310.43 381.46 -315.42 Z M 2889.13 832.55 c 0 -69.98 -0.74 -276.22 -1.21 -292.66 l 216.85 1.35 c 145.77 1.25 315.56 32.94 427.13 114.56 115.84 84.75 175.7 190.46 178.48 409.31 5.6 440.82 5.86 588.05 5.86 588.19 h -1160.59 s -240.86 -37.56 -252.32 -524.53 c -11.46 -486.97 -6.98 -1125.45 -6.98 -1125.45 0 0 327.75 -0.58 394.91 0 73.84 0.64 67.98 60.53 67.98 60.53 l 5.28 1052.51 s -1.61 186.17 205.16 228.77 c 42.49 8.75 299 1.46 299 1.46 l 1.91 -198.61 c 2.39 -369.53 -381.46 -310.43 -381.46 -315.42 Z M 1419.14 1656.35 h 878.46 s -143.23 -114.9 -163.28 -486.34 c -16.17 -299.48 -8.59 -1027.41 -8.59 -1027.41 0 0 9.76 -139.41 -100.58 -139.41 C 1931.58 3.19 1696.31 0 1696.31 0 c 0 0 -103.53 -2.95 -99.57 134.82 4.05 140.72 -3.82 1024.68 -3.82 1024.68 0 0 9.55 310.33 -173.78 496.84 Z</Geometry>
+
+    <!-- Pill toggles: the dashboard's time range and filters, the token charts' options -->
+    <Style x:Key="ChipToggle" TargetType="ToggleButton">
+      <Setter Property="Foreground" Value="#A9ACB4"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Margin" Value="0,0,2,0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ToggleButton">
+            <Border x:Name="Bg" Background="Transparent" CornerRadius="10" Padding="9,2,9,3">
+              <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Background" Value="#24262B"/>
+              </Trigger>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Bg" Property="Background" Value="#30333A"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- Buttons in the city and settings dialogs -->
+    <Style x:Key="DialogButton" TargetType="Button">
+      <Setter Property="Foreground" Value="#E6E7EA"/>
+      <Setter Property="Background" Value="#2C2D33"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Margin" Value="8,0,0,0"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="14,6,14,7">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Opacity" Value="0.85"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="#7D808A"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Application.Resources>
+</Application>

@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>SessionDeck</AssemblyName>
+    <RootNamespace>ClaudeSessions</RootNamespace>
+    <Version>1.0.0</Version>
+    <Product>Session Deck</Product>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpVectors.Wpf" Version="1.8.6" />
+  </ItemGroup>
+
+</Project>
+
