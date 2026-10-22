@@ -112,14 +112,28 @@ You need the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on
 ```bash
 git clone https://github.com/DigitalImmersiveBox/SessionDeck.git
 cd SessionDeck
-dotnet run
+dotnet run --project src/SessionDeck
 ```
 
 To build a single-file exe that doesn't need .NET installed:
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o release
+dotnet publish src/SessionDeck -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o release
 ```
+
+### Project layout
+
+| Folder | What's in it |
+|---|---|
+| `src/SessionDeck` | The app's startup (`App.xaml`), settings and demo data |
+| `src/SessionDeck/Sessions` | Reading Claude Code's transcripts and session list, projects and token counts |
+| `src/SessionDeck/Usage` | Plan usage, usage history and the Claude Code CLI sign-in helper |
+| `src/SessionDeck/Weather` | Local weather from Open-Meteo |
+| `src/SessionDeck/Windows` | The dashboard, usage widget, token view and dialogs |
+| `src/SessionDeck/Controls` | Tray icon, menus and charts |
+| `src/SessionDeck/Mascots` | The pixel mascots, their scenes and stories |
+| `src/SessionDeck/Runner` | The runner game |
+| `docs/images` | README screenshots |
 
 ### Command-line flags
 
