@@ -50,6 +50,31 @@
       </Setter>
     </Style>
 
+    <!-- A header button with a word on it, for the one action that should be easy to find -->
+    <Style x:Key="LabelButton" TargetType="Button">
+      <Setter Property="Foreground" Value="#C9CACF"/>
+      <Setter Property="Height" Value="24"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bg" Background="#2A2B30" BorderBrush="#3A3B42" BorderThickness="1" CornerRadius="5" Padding="8,0,9,1">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Background" Value="#3A3B42"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
     <Style x:Key="ActionButton" TargetType="Button">
       <Setter Property="Foreground" Value="#E6E7EA"/>
       <Setter Property="Background" Value="#2C2D33"/>
@@ -104,15 +129,18 @@
         <TextBlock Text="CLAUDE USAGE" Style="{StaticResource Caption}" FontSize="13" VerticalAlignment="Center"/>
         <local:PixelHearts x:Name="Hearts" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0"/>
         <StackPanel Grid.Column="2" Orientation="Horizontal">
+          <Button Style="{StaticResource LabelButton}" Click="OnDashboard" Margin="0,0,4,0" ToolTip="Open the sessions dashboard">
+            <StackPanel Orientation="Horizontal">
+              <Path Data="M0.5,0.5 H11.5 V9.5 H0.5 Z M0.5,3.5 H11.5" StrokeThickness="1.2" VerticalAlignment="Center" Margin="0,1,6,0"
+                    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+              <TextBlock Text="Dashboard" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
           <Button x:Name="MenuButton" Style="{StaticResource HeaderButton}" Click="OnMenu" ToolTip="Menu">
             <Path Data="M0,0 L8,0 L4,5 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
           </Button>
           <Button Style="{StaticResource HeaderButton}" Click="OnGame" ToolTip="Runner: a little game with your mascot while sessions work">
             <Path Data="M1,0 L9,5 L1,10 Z" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
-          </Button>
-          <Button Style="{StaticResource HeaderButton}" Click="OnDashboard" ToolTip="Open the sessions dashboard">
-            <Path Data="M0.5,0.5 H11.5 V9.5 H0.5 Z M0.5,3.5 H11.5" StrokeThickness="1.2"
-                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
           </Button>
           <Button Style="{StaticResource HeaderButton}" Click="OnHide" ToolTip="Hide widget (it stays in the tray)">
             <Path Data="M0,0 L10,10 M10,0 L0,10" StrokeThickness="1.4"
