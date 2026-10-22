@@ -47,6 +47,9 @@ sealed class Settings
     public int RunnerDailyBest { get; set; }
     public string RunnerDailyDate { get; set; } = "";
     public int Version { get; set; }
+    /// <summary>Made up for an off-screen render (--dashboard): never saved over your real settings.</summary>
+    [JsonIgnore]
+    public bool Transient { get; init; }
 
     /// <summary>%AppData%\SessionDeck. The app used to be called Claude Sessions, so its old folder is moved here once.</summary>
     public static string DataDir { get; } = PrepareDataDir();
@@ -86,6 +89,7 @@ sealed class Settings
 
     public void Save()
     {
+        if (Transient) return;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);

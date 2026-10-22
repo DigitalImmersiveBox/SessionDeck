@@ -28,6 +28,9 @@ public sealed class UsageHistory
         catch { points = new(); }
     }
 
+    /// <summary>Made-up readings for --dashboard: not loaded from disk (and never added to, so never saved).</summary>
+    public UsageHistory(IEnumerable<UsagePoint> readings) => points = readings.ToList();
+
     public IReadOnlyList<UsagePoint> Points => points;
 
     public void Add(UsageReport report)

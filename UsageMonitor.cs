@@ -24,7 +24,7 @@ public sealed class UsageMonitor
     bool fetchingUsage, fetchingStatus;
 
     public UsageReport? Usage { get; private set; }
-    public UsageHistory History { get; } = new();
+    public UsageHistory History { get; private set; } = new();
     public string? Error { get; private set; }
     /// <summary>The last fetch failed because of the login; the widget offers Refresh sign-in / Sign in.</summary>
     public bool NeedsSignIn { get; private set; }
@@ -43,6 +43,14 @@ public sealed class UsageMonitor
     }
 
     public void Stop() => timer.Stop();
+
+    /// <summary>Made-up usage for --dashboard, shown without starting (so nothing is fetched).</summary>
+    internal void ShowDemo(UsageReport usage, ServiceStatus status, IEnumerable<UsagePoint> history)
+    {
+        Usage = usage;
+        Status = status;
+        History = new UsageHistory(history);
+    }
 
     public void RefreshNow() => nextUsage = nextStatus = DateTime.MinValue;
 

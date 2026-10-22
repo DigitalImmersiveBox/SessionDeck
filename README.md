@@ -23,6 +23,10 @@
 
 ### A dashboard of every session
 
+<p align="center">
+  <img src="docs/images/dashboard.png" alt="Session Deck dashboard with sessions that need you, are working, or are done">
+</p>
+
 Session Deck reads the transcripts Claude Code writes on your PC and works out what each session is doing right now:
 
 | Status | Meaning |
@@ -123,12 +127,13 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 |---|---|
 | `--tray` | Start in the tray without opening the dashboard |
 | `--demo` | Show made-up states in the usage widget |
+| `--dashboard <file.png>` | Render the dashboard filled with made-up sessions to PNG, then exit (reads none of yours) |
 | `--snapshot <dir>` | Render every widget demo state and the settings dialog to PNG, then exit |
 | `--runner <dir> [--daily]` | Record the runner game playing itself, frame by frame, then exit |
 | `--stories <dir>` / `--signatures <dir>` | Render each mascot's story or signature move, frame by frame, then exit |
 | `--token-charts <dir>` | Render the token charts from your own logs to PNG, then exit |
 | `--dump <file>` | Write one session scan as JSON, then exit (for troubleshooting) |
-| `--mascot <name>` | Which mascot to draw for `--snapshot`, `--runner` and `--write-icon` |
+| `--mascot <name>` | Which mascot to draw for `--dashboard`, `--snapshot`, `--runner` and `--write-icon` |
 | `--write-icon <file.ico>` | Regenerate the app icon from the mascot |
 
 ## License

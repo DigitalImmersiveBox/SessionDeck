@@ -32,8 +32,9 @@ public partial class MainWindow : Window
     readonly SessionScanner scanner = new();
     readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(2) };
     readonly HashSet<string> notified = new();
-    readonly Settings settings = Settings.Load();
-    readonly Tray tray;
+    readonly Settings settings;
+    readonly Tray? tray; // none in an off-screen render
+    readonly bool offscreen;
     readonly UsageMonitor usage = new();
     readonly WeatherService weather;
     readonly UsageWidget widget;
@@ -64,8 +65,12 @@ public partial class MainWindow : Window
     bool IsListed(SessionItem i) => !settings.HideDone || !IsFinished(i);
 
     /// <param name="demoWidget">Show made-up states in the usage widget (--demo); the dashboard stays live.</param>
-    public MainWindow(bool demoWidget = false)
+    /// <param name="snapshot">Settings for an off-screen render (--dashboard): no tray, widget, scans, timers or network.</param>
+    internal MainWindow(bool demoWidget = false, Settings? snapshot = null)
     {
+        // Set before InitializeComponent: the XAML's Checked handlers already read the settings
+        settings = snapshot ?? Settings.Load();
+        offscreen = snapshot != null;
         InitializeComponent();
         scanner.RestoreDismissed(settings.DismissedQuestions);
         selectedProject = allProjects;
@@ -108,35 +113,78 @@ public partial class MainWindow : Window
         foreach (var chip in FindChips())
             if ((string)chip.Tag == settings.WindowHours.ToString()) chip.IsChecked = true;
 
-        tray = new Tray(settings.Topmost, settings.Notifications, settings.Widget.Visible, settings.Mascot);
-        tray.ShowRequested += ShowFromTray;
-        tray.ExitRequested += ExitApp;
-        tray.TopmostChanged += on => PinButton.IsChecked = on;
-        tray.NotificationsChanged += on => { settings.Notifications = on; settings.Save(); };
-        tray.WidgetChanged += SetWidgetVisible;
-        tray.MascotChanged += SetMascot;
+        if (!offscreen)
+        {
+            tray = new Tray(settings.Topmost, settings.Notifications, settings.Widget.Visible, settings.Mascot);
+            tray.ShowRequested += ShowFromTray;
+            tray.ExitRequested += ExitApp;
+            tray.TopmostChanged += on => PinButton.IsChecked = on;
+            tray.NotificationsChanged += on => { settings.Notifications = on; settings.Save(); };
+            tray.WidgetChanged += SetWidgetVisible;
+            tray.MascotChanged += SetMascot;
+            tray.LinkClicked += OpenLink;
+        }
         BannerScene.Mascot = Mascot.For(settings.Mascot);
-        tray.LinkClicked += OpenLink;
 
-        widget = new UsageWidget(usage, settings, demoWidget);
+        widget = new UsageWidget(usage, settings, demoWidget, snapshot: offscreen);
         widget.OpenSessionRequested += Open;
         widget.DashboardRequested += ShowFromTray;
         widget.GameRequested += OpenGame;
         widget.VisibleChangedByUser += SetWidgetVisible;
         WidgetButton.IsChecked = settings.Widget.Visible;
-        if (settings.Widget.Visible) widget.ShowWidget();
+        if (settings.Widget.Visible && !offscreen) widget.ShowWidget();
         usage.Changed += RenderBanner;
-        usage.Start();
         // Keep Clawd and the clouds clear of the text as columns come and go
         BannerText.SizeChanged += (_, _) => BannerScene.SkyLeft = BannerText.ActualWidth + 40;
         weather = new WeatherService(settings);
         weather.Changed += RenderWeather;
-        weather.Start();
 
         SourceInitialized += (_, _) => UseDarkTitleBar();
         timer.Tick += async (_, _) => await Refresh();
+        if (offscreen) return;
+        usage.Start();
+        weather.Start();
         timer.Start();
         _ = Refresh();
+    }
+
+    /// <summary>
+    /// For --dashboard: the window filled with made-up projects and sessions (Demo.Dashboard), rendered
+    /// off-screen to PNG. Reads none of your sessions and saves nothing.
+    /// </summary>
+    public static void SaveSnapshot(MascotKind mascot, string path)
+    {
+        // Wide enough for four columns of cards, so the eight demo sessions fill two rows
+        var settings = new Settings { Transient = true, Mascot = mascot, Width = 1560, Height = 680 };
+        var window = new MainWindow(snapshot: settings)
+        {
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = -10000,
+            Top = -10000,
+        };
+        window.Show();
+        var demo = Demo.Dashboard(DateTime.UtcNow);
+        window.usage.ShowDemo(demo.Usage, demo.Status, demo.History);
+        window.weather.ShowDemo(demo.Weather);
+        window.Apply(demo.Sessions.ToList());
+        window.ShowProjects(demo.Projects);
+        window.RenderToday(demo.Today);
+        window.RenderWeather();
+        window.UpdateLayout();
+        window.BannerScene.Advance(2.5);
+        // Let the queued layout passes (the banner fitting the weather in) run before capturing
+        window.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+        window.UpdateLayout();
+        string? dir = Path.GetDirectoryName(Path.GetFullPath(path));
+        if (dir != null) Directory.CreateDirectory(dir);
+        // The window's own background isn't part of its content; without it the header's text renders on black
+        var content = (Panel)window.Content;
+        content.Background ??= window.Background;
+        window.UpdateLayout();
+        UsageWidget.SavePng(content, path);
+        window.exiting = true;
+        window.Close();
     }
 
     async Task Refresh()
@@ -222,7 +270,7 @@ public partial class MainWindow : Window
         RenderBanner();
 
         string tip = needYou > 0 ? $"{needYou} session(s) need you · {working} working" : $"Session Deck · {working} working";
-        tray.Update(needYou, working, tip);
+        tray?.Update(needYou, working, tip);
         var iconState = (needYou, working > 0);
         if (iconState != shownIcon)
         {
@@ -475,7 +523,7 @@ public partial class MainWindow : Window
             SessionStatus.Check => "may need approval",
             _ => "finished, your turn",
         };
-        tray.Notify($"{s.Project} — {head}", $"{s.Title}\n{s.Activity ?? s.Detail ?? ""}", s.Link);
+        tray?.Notify($"{s.Project} — {head}", $"{s.Title}\n{s.Activity ?? s.Detail ?? ""}", s.Link);
     }
 
     void ShowSummary(int needYou, int working, int done)
@@ -621,12 +669,13 @@ public partial class MainWindow : Window
 
     void SetWidgetVisible(bool on)
     {
-        if (widget == null) return; // XAML sets IsChecked before the constructor has made the widget
+        // XAML sets IsChecked before the constructor has made the widget; an off-screen render never shows it
+        if (widget == null || offscreen) return;
         settings.Widget.Visible = on;
         settings.Save();
         if (on) widget.ShowWidget();
         else widget.Hide();
-        tray.Widget = on;
+        tray?.Widget = on;
         WidgetButton.IsChecked = on;
     }
 
@@ -637,7 +686,7 @@ public partial class MainWindow : Window
         var mascot = Mascot.For(kind);
         BannerScene.Mascot = mascot;
         widget.Mascot = mascot;
-        tray.Mascot = kind;
+        tray?.Mascot = kind;
         game?.SetMascot(kind);
         Icon = MascotIcon.Source(mascot, 32, shownIcon.Item1 < 0 ? 0 : shownIcon.Item1, shownIcon.Item2);
     }
@@ -828,7 +877,7 @@ public partial class MainWindow : Window
             if (!hintShown)
             {
                 hintShown = true;
-                tray.Notify("Session Deck is still running", "It keeps watching your sessions from the tray. Right-click the tray icon to exit.", null);
+                tray?.Notify("Session Deck is still running", "It keeps watching your sessions from the tray. Right-click the tray icon to exit.", null);
             }
             return;
         }
@@ -842,7 +891,7 @@ public partial class MainWindow : Window
         usage.Stop();
         SaveBounds();
         widget.Close();
-        tray.Dispose();
+        tray?.Dispose();
         Close();
         Application.Current.Shutdown();
     }

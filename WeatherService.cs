@@ -50,6 +50,9 @@ public sealed class WeatherService
         if (DateTime.UtcNow >= next && !fetching) _ = Fetch();
     }
 
+    /// <summary>Made-up weather for --dashboard, shown without starting (so nothing is fetched).</summary>
+    internal void ShowDemo(WeatherNow now) => Current = now;
+
     /// <summary>Use this city from now on (Change city), and show its weather straight away.</summary>
     public void SetCity(CityMatch city)
     {

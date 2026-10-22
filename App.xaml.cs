@@ -30,7 +30,7 @@ public partial class App : Application
             return;
         }
 
-        // --mascot dib|dibwhite|clawd: who to draw for --snapshot and --write-icon (default dib)
+        // --mascot dib|dibwhite|clawd: who to draw for --dashboard, --snapshot and --write-icon (default dib)
         int mascotArg = Array.IndexOf(e.Args, "--mascot");
         var mascot = mascotArg >= 0 && e.Args.Length > mascotArg + 1 && Enum.TryParse(e.Args[mascotArg + 1], true, out MascotKind kind)
             ? kind : MascotKind.Dib;
@@ -43,6 +43,15 @@ public partial class App : Application
             var settings = new Settings { Mascot = mascot };
             new UsageWidget(new UsageMonitor(), settings, demo: true, snapshot: true).SaveSnapshots(dir);
             SettingsDialog.SaveSnapshot(settings, Path.Combine(dir, "settings.png"));
+            Shutdown();
+            return;
+        }
+
+        // --dashboard <file.png>: render the dashboard with made-up projects and sessions to PNG and exit (no scans, no network)
+        int dashboard = Array.IndexOf(e.Args, "--dashboard");
+        if (dashboard >= 0)
+        {
+            ClaudeSessions.MainWindow.SaveSnapshot(mascot, e.Args.Length > dashboard + 1 ? e.Args[dashboard + 1] : "dashboard.png");
             Shutdown();
             return;
         }
