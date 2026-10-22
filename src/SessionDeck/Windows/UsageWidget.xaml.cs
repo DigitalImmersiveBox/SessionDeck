@@ -86,6 +86,7 @@ public partial class UsageWidget : Window
             NextDemo();
         }
         Loaded += (_, _) => Place();
+        TopmostGuard.Attach(this);
         Closed += (_, _) => menu.Dispose();
     }
 

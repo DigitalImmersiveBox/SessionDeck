@@ -145,6 +145,7 @@ public partial class MainWindow : Window
         SourceInitialized += (_, _) => UseDarkTitleBar();
         timer.Tick += async (_, _) => await Refresh();
         if (offscreen) return;
+        TopmostGuard.Attach(this);
         usage.Start();
         weather.Start();
         timer.Start();

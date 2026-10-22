@@ -9,7 +9,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>SessionDeck</AssemblyName>
     <RootNamespace>ClaudeSessions</RootNamespace>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <Product>Session Deck</Product>
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
