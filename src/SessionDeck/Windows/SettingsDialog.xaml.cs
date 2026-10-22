@@ -15,15 +15,19 @@ public partial class SettingsDialog : Window
 {
     readonly Settings settings;
     readonly WeatherService weather;
+    readonly Updater updater;
 
     public event Action<MascotKind>? MascotChanged;
     public event Action? UnitChanged;
+    /// <summary>"Update now": the dashboard downloads it and restarts.</summary>
+    public event Action? UpdateRequested;
 
-    internal SettingsDialog(Settings settings, WeatherService weather)
+    internal SettingsDialog(Settings settings, WeatherService weather, Updater updater)
     {
         InitializeComponent();
         this.settings = settings;
         this.weather = weather;
+        this.updater = updater;
 
         (settings.Fahrenheit ? FahrenheitButton : CelsiusButton).IsChecked = true;
         foreach (var (kind, label) in Mascot.Choices)
@@ -49,6 +53,9 @@ public partial class SettingsDialog : Window
         ShowCity();
         weather.Changed += ShowCity;
         Closed += (_, _) => weather.Changed -= ShowCity;
+        ShowUpdate();
+        updater.Changed += ShowUpdate;
+        Closed += (_, _) => updater.Changed -= ShowUpdate;
         SourceInitialized += (_, _) =>
         {
             int on = 1; // dark title bar, like the dashboard
@@ -72,6 +79,48 @@ public partial class SettingsDialog : Window
 
     void UseDetected_Click(object sender, RoutedEventArgs e) => weather.UseDetectedPlace();
 
+    void ShowUpdate()
+    {
+        VersionText.Text = $"Version {updater.Current}";
+        var release = updater.Available;
+        WhatsNewLink.Visibility = release != null ? Visibility.Visible : Visibility.Collapsed;
+        UpdateButton.ClearValue(BackgroundProperty);
+        UpdateButton.IsEnabled = !updater.Checking && !updater.Installing;
+        if (updater.Installing)
+        {
+            UpdateNote.Text = $"Downloading {release?.Version}… {updater.Progress:P0}";
+            UpdateButton.Content = "Updating…";
+        }
+        else if (updater.Checking)
+        {
+            UpdateNote.Text = "Checking for updates…";
+            UpdateButton.Content = "Check for updates";
+        }
+        else if (release != null)
+        {
+            UpdateNote.Text = $"Version {release.Version} is available.";
+            UpdateButton.Content = updater.CanInstall ? "Update now" : "Download";
+            UpdateButton.Background = new SolidColorBrush(Color.FromRgb(0xC1, 0x5F, 0x3C));
+        }
+        else
+        {
+            UpdateNote.Text = updater.Error ?? (updater.LastChecked is { } at ? $"You're up to date. Checked at {at:t}." : "Checks GitHub twice a day.");
+            UpdateButton.Content = "Check for updates";
+        }
+    }
+
+    void Update_Click(object sender, RoutedEventArgs e)
+    {
+        if (updater.Available != null) UpdateRequested?.Invoke();
+        else _ = updater.CheckAsync();
+    }
+
+    void WhatsNew_Click(object sender, RoutedEventArgs e)
+    {
+        try { Process.Start(new ProcessStartInfo(updater.Available?.Page ?? Updater.ReleasesPage) { UseShellExecute = true }); }
+        catch (Exception ex) { MessageBox.Show("Could not open the release notes:\n" + ex.Message, "Session Deck"); }
+    }
+
     void Website_Click(object sender, RoutedEventArgs e)
     {
         try { Process.Start(new ProcessStartInfo("https://digitalimmersivebox.com") { UseShellExecute = true }); }
@@ -91,7 +140,7 @@ public partial class SettingsDialog : Window
     /// <summary>For --snapshot: the panel rendered off-screen, no network.</summary>
     internal static void SaveSnapshot(Settings settings, string path)
     {
-        var dialog = new SettingsDialog(settings, new WeatherService(settings)) { Left = -10000, Top = -10000, ShowActivated = false };
+        var dialog = new SettingsDialog(settings, new WeatherService(settings), new Updater()) { Left = -10000, Top = -10000, ShowActivated = false };
         dialog.Show();
         dialog.UpdateLayout();
         UsageWidget.SavePng((FrameworkElement)VisualTreeHelper.GetChild(dialog, 0), path); // the window's own border, with its background

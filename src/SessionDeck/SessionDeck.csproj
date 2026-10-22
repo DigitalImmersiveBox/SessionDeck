@@ -9,13 +9,18 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>SessionDeck</AssemblyName>
     <RootNamespace>ClaudeSessions</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Product>Session Deck</Product>
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="SharpVectors.Wpf" Version="1.8.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Tells the updater which release zip matches this build -->
+    <AssemblyMetadata Include="SelfContained" Value="$(SelfContained)" />
   </ItemGroup>
 
 </Project>

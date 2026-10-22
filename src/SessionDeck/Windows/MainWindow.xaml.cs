@@ -37,6 +37,8 @@ public partial class MainWindow : Window
     readonly bool offscreen;
     readonly UsageMonitor usage = new();
     readonly WeatherService weather;
+    readonly Updater updater = new();
+    Version? announced; // the release the tray has already popped up about
     readonly UsageWidget widget;
     RunnerWindow? game;
     TokenStats? tokenStats;
@@ -123,6 +125,7 @@ public partial class MainWindow : Window
             tray.WidgetChanged += SetWidgetVisible;
             tray.MascotChanged += SetMascot;
             tray.LinkClicked += OpenLink;
+            tray.UpdateRequested += UpdateFromTray;
         }
         BannerScene.Mascot = Mascot.For(settings.Mascot);
 
@@ -145,6 +148,7 @@ public partial class MainWindow : Window
         usage.Start();
         weather.Start();
         timer.Start();
+        StartUpdateChecks();
         _ = Refresh();
     }
 
@@ -625,10 +629,85 @@ public partial class MainWindow : Window
 
     void Settings_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new SettingsDialog(settings, weather) { Owner = this };
+        var dialog = new SettingsDialog(settings, weather, updater) { Owner = this };
         dialog.MascotChanged += SetMascot;
         dialog.UnitChanged += RenderWeather;
+        dialog.UpdateRequested += () => _ = InstallUpdate();
+        if (updater.LastChecked is not { } at || DateTime.Now - at > TimeSpan.FromHours(1)) _ = updater.CheckAsync();
         dialog.ShowDialog();
+    }
+
+    // ---- Updates --------------------------------------------------------------
+
+    /// <summary>Checks GitHub a minute after start and then twice a day, and pops up once about each new release.</summary>
+    void StartUpdateChecks()
+    {
+        _ = updater.CleanUpAsync();
+        if (Environment.GetCommandLineArgs().Contains("--updated"))
+            tray?.Notify("Session Deck was updated", $"You're on version {updater.Current}. Click to see what's new.", Updater.ReleasesPage);
+        updater.Changed += ShowUpdateState;
+        var check = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        check.Tick += async (_, _) =>
+        {
+            check.Interval = TimeSpan.FromHours(12);
+            await updater.CheckAsync();
+            if (updater.Available is { } release && release.Version != announced)
+            {
+                announced = release.Version;
+                tray?.Notify($"Session Deck {release.Version} is available", "Click to update. It restarts the app and keeps your settings.", null, ConfirmUpdate);
+            }
+        };
+        check.Start();
+    }
+
+    void ShowUpdateState()
+    {
+        if (updater.Installing) tray?.ShowUpdate($"Downloading update… {updater.Progress:P0}", false);
+        else if (updater.Checking) tray?.ShowUpdate("Checking for updates…", false);
+        else if (updater.Available is { } release) tray?.ShowUpdate($"Update to {release.Version}…", true);
+        else tray?.ShowUpdate("Check for updates", true);
+    }
+
+    /// <summary>The tray's update item: offers a release already found, or checks now and says what it found.</summary>
+    async void UpdateFromTray()
+    {
+        if (updater.Available == null)
+        {
+            await updater.CheckAsync();
+            if (updater.Error != null) { tray?.Notify("Couldn't check for updates", updater.Error, null); return; }
+            if (updater.Available == null) { tray?.Notify("Session Deck is up to date", $"Version {updater.Current} is the latest.", null); return; }
+        }
+        ConfirmUpdate();
+    }
+
+    void ConfirmUpdate()
+    {
+        if (updater.Available is not { } release || updater.Installing) return;
+        if (MessageBox.Show(
+                $"Update Session Deck from {updater.Current} to {release.Version}?\n\n" +
+                $"It downloads {release.ZipSize / 1048576.0:0.#} MB, then restarts. Your settings stay as they are.",
+                "Session Deck", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            _ = InstallUpdate();
+    }
+
+    /// <summary>Downloads and swaps in the new version, then hands over to it. A build that can't update itself gets the download page.</summary>
+    async Task InstallUpdate()
+    {
+        if (updater.Available is not { } release) return;
+        if (!updater.CanInstall)
+        {
+            OpenLink(release.Page);
+            return;
+        }
+        if (await updater.InstallAsync())
+        {
+            updater.Restart(toTray: !IsVisible);
+            ExitApp();
+        }
+        else if (updater.Error != null &&
+                 MessageBox.Show(updater.Error + "\n\nOpen the download page instead?", "Session Deck",
+                     MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            OpenLink(release.Page);
     }
 
     void Game_Click(object sender, RoutedEventArgs e) => OpenGame();

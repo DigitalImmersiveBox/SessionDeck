@@ -94,6 +94,21 @@
                FontSize="12" Foreground="#A9ACB4" Margin="0,3,0,10" TextWrapping="Wrap"/>
     <UniformGrid x:Name="MascotTiles" Columns="4" Margin="0,0,-8,-8"/>
 
+    <Border Height="1" Background="#2C2F36" Margin="0,18,0,16"/>
+
+    <TextBlock Text="UPDATES" Style="{StaticResource Heading}"/>
+    <DockPanel Margin="0,8,0,0">
+      <Button x:Name="UpdateButton" DockPanel.Dock="Right" Content="Check for updates" Style="{StaticResource DialogButton}"
+              VerticalAlignment="Center" Click="Update_Click"/>
+      <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+        <TextBlock x:Name="VersionText" FontSize="14"/>
+        <TextBlock x:Name="UpdateNote" FontSize="11.5" Foreground="#A9ACB4" Margin="0,1,0,0" TextWrapping="Wrap"/>
+        <TextBlock x:Name="WhatsNewLink" Margin="0,3,0,0" FontSize="12" HorizontalAlignment="Left" Visibility="Collapsed">
+          <Hyperlink Foreground="#60A5FA" Click="WhatsNew_Click">See what's new</Hyperlink>
+        </TextBlock>
+      </StackPanel>
+    </DockPanel>
+
     <!-- Credits on the left (dib logo and a link to our website), Done on the right -->
     <DockPanel Margin="0,18,0,0">
       <Button DockPanel.Dock="Right" Content="Done" Style="{StaticResource DialogButton}" Background="#C15F3C" IsDefault="True" IsCancel="True"/>

@@ -86,6 +86,12 @@ Play a one-button runner with your mascot while your sessions work: jump over bu
 
 The app lives in the system tray. Right-click the tray icon to open the dashboard, show or hide the widget, turn notifications on or off, pick a mascot, or turn on **Start with Windows**.
 
+### Updating
+
+Session Deck checks GitHub for a new release a minute after it starts and then twice a day. When it finds one, it shows a notification. To update, click that notification, **Update to …** in the tray menu, or **Update now** under Updates in Settings. It downloads the release, checks it against the release's SHA-256, puts the new exe in place of the old one and restarts. Your settings and **Start with Windows** stay as they are.
+
+Version 1.0.1 and older don't have the updater. To update from those, quit the app from the tray, unzip the new release over the old `SessionDeck.exe` and start it again.
+
 ### Requirements
 
 - Windows 10 or 11, 64-bit.
@@ -100,6 +106,7 @@ Session Deck runs only on your PC. It doesn't have a server and it doesn't colle
 - **Sessions:** it reads Claude Code's transcripts in `%UserProfile%\.claude\projects` and the Claude desktop app's session list. It never writes to them.
 - **Usage:** it asks `api.anthropic.com` for your plan limits with Claude Code's own sign-in (the same call behind Claude Code's `/usage`). It never copies, refreshes or stores that token. When the sign-in expires, it asks the `claude` CLI to renew it or opens `claude auth login` for you.
 - **Service status:** from `status.claude.com`.
+- **Updates:** it asks `api.github.com` for this repository's latest release, and downloads it from GitHub only when you choose to update.
 - **Weather:** your approximate city comes from your internet address (via `ipapi.co`, falling back to `ipwho.is`) once a day, and the forecast comes from Open-Meteo. You can set a city by hand in Settings instead.
 - **Settings** are saved in `%AppData%\SessionDeck`.
 

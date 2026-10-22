@@ -122,6 +122,11 @@ public partial class App : Application
 
         // Single instance: a second launch just brings the first window up
         mutex = new Mutex(true, "SessionDeck.SingleInstance", out bool created);
+        if (!created && e.Args.Contains("--updated")) // just installed by the old version, which is still closing
+        {
+            try { created = mutex.WaitOne(TimeSpan.FromSeconds(30)); }
+            catch (AbandonedMutexException) { created = true; } // it exited without letting go; it's ours now
+        }
         showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, "SessionDeck.Show");
         if (!created)
         {

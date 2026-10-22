@@ -16,9 +16,10 @@ sealed class Tray : IDisposable
     const string OldRunValue = "ClaudeSessions"; // the app's name before it became Session Deck
 
     readonly WinForms.NotifyIcon icon = new();
-    readonly WinForms.ToolStripMenuItem widgetItem, topmostItem, notifyItem, startupItem, mascotItem;
+    readonly WinForms.ToolStripMenuItem widgetItem, topmostItem, notifyItem, startupItem, mascotItem, updateItem;
     IntPtr iconHandle;
     string? balloonLink;
+    Action? balloonAction;
     MascotKind mascot;
 
     public event Action? ShowRequested;
@@ -28,6 +29,7 @@ sealed class Tray : IDisposable
     public event Action<bool>? WidgetChanged;
     public event Action<MascotKind>? MascotChanged;
     public event Action<string>? LinkClicked;
+    public event Action? UpdateRequested;
 
     public Tray(bool topmost, bool notifications, bool widget, MascotKind mascot)
     {
@@ -58,13 +60,17 @@ sealed class Tray : IDisposable
         mascotMenu.ShowCheckMargin = true;
         menu.Items.AddRange(new WinForms.ToolStripItem[] { topmostItem, notifyItem, startupItem, mascotItem });
         menu.Items.Add(new WinForms.ToolStripSeparator());
+        updateItem = new WinForms.ToolStripMenuItem("Check for updates");
+        updateItem.Click += (_, _) => UpdateRequested?.Invoke();
+        menu.Items.Add(updateItem);
         menu.Items.Add("Exit", null, (_, _) => ExitRequested?.Invoke());
 
         icon.ContextMenuStrip = menu;
         icon.MouseClick += (_, e) => { if (e.Button == WinForms.MouseButtons.Left) ShowRequested?.Invoke(); };
         icon.BalloonTipClicked += (_, _) =>
         {
-            if (balloonLink != null) LinkClicked?.Invoke(balloonLink);
+            if (balloonAction != null) balloonAction();
+            else if (balloonLink != null) LinkClicked?.Invoke(balloonLink);
             else ShowRequested?.Invoke();
         };
         Update(0, 0, "Session Deck");
@@ -109,9 +115,18 @@ sealed class Tray : IDisposable
         if (old != IntPtr.Zero) DestroyIcon(old);
     }
 
-    public void Notify(string title, string text, string? link)
+    /// <summary>The update item's text: "Check for updates", "Update to 1.2.0…", or what it's busy with (greyed out).</summary>
+    public void ShowUpdate(string text, bool enabled)
+    {
+        updateItem.Text = text;
+        updateItem.Enabled = enabled;
+    }
+
+    /// <summary>A pop-up; clicking it opens <paramref name="link"/>, runs <paramref name="onClick"/>, or else the dashboard.</summary>
+    public void Notify(string title, string text, string? link, Action? onClick = null)
     {
         balloonLink = link;
+        balloonAction = onClick;
         icon.ShowBalloonTip(6000, Clip(title, 63), Clip(string.IsNullOrWhiteSpace(text) ? " " : text, 255), WinForms.ToolTipIcon.None);
     }
 
