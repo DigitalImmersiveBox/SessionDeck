@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -70,6 +71,12 @@ public partial class SettingsDialog : Window
     }
 
     void UseDetected_Click(object sender, RoutedEventArgs e) => weather.UseDetectedPlace();
+
+    void Website_Click(object sender, RoutedEventArgs e)
+    {
+        try { Process.Start(new ProcessStartInfo("https://digitalimmersivebox.com") { UseShellExecute = true }); }
+        catch (Exception ex) { MessageBox.Show("Could not open the website:\n" + ex.Message, "Session Deck"); }
+    }
 
     void Unit_Checked(object sender, RoutedEventArgs e)
     {

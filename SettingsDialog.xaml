@@ -94,8 +94,16 @@
                FontSize="12" Foreground="#A9ACB4" Margin="0,3,0,10" TextWrapping="Wrap"/>
     <UniformGrid x:Name="MascotTiles" Columns="4" Margin="0,0,-8,-8"/>
 
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-      <Button Content="Done" Style="{StaticResource DialogButton}" Background="#C15F3C" IsDefault="True" IsCancel="True"/>
-    </StackPanel>
+    <!-- Credits on the left (dib logo and a link to our website), Done on the right -->
+    <DockPanel Margin="0,18,0,0">
+      <Button DockPanel.Dock="Right" Content="Done" Style="{StaticResource DialogButton}" Background="#C15F3C" IsDefault="True" IsCancel="True"/>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <Path Height="11" Stretch="Uniform" Fill="#8A8D96" VerticalAlignment="Center" Data="{StaticResource DibLogo}"/>
+        <TextBlock Margin="8,0,0,1" FontSize="12" Foreground="#7D808A" VerticalAlignment="Center">
+          <Run Text="Made by"/>
+          <Hyperlink Foreground="#60A5FA" Click="Website_Click" ToolTip="Open digitalimmersivebox.com">Digital Immersive Box</Hyperlink>
+        </TextBlock>
+      </StackPanel>
+    </DockPanel>
   </StackPanel>
 </Window>
