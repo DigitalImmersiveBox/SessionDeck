@@ -142,6 +142,21 @@ public sealed partial class PixelScene : FrameworkElement
     /// <summary>Keeps the sky (clouds, stars, moon, rain) and Clawd right of this x, clear of text drawn over the scene.</summary>
     public double SkyLeft { get; set; }
 
+    /// <summary>Just the mascot and his effects (no clouds, glow or butterflies), free to roam the whole width: the taskbar strip.</summary>
+    public bool Bare { get; init; }
+
+    /// <summary>The middle of the mascot across the scene; NaN until he's first placed.</summary>
+    public double MascotCenter => x + MascotWidth / 2;
+
+    /// <summary>After each step of the animation (the taskbar strip moves its window along with him).</summary>
+    public event Action? Advanced;
+
+    /// <summary>A double-click on him; while anyone listens, it no longer plays his story.</summary>
+    public event Action? DoubleClicked;
+
+    /// <summary>The leftmost place he goes on his own.</summary>
+    double MinX => Bare ? 4 : Math.Max(ActualWidth * 0.36, SkyLeft + 8);
+
     public PixelScene()
     {
         ClipToBounds = true;
@@ -164,6 +179,7 @@ public sealed partial class PixelScene : FrameworkElement
         for (double left = seconds; left > 1e-6; left -= Frame)
             Update(Math.Min(Frame, left));
         InvalidateVisual();
+        Advanced?.Invoke();
     }
 
     bool Asleep => Mood == Mood.Sleeping && time >= awakeUntil;
@@ -177,7 +193,7 @@ public sealed partial class PixelScene : FrameworkElement
         time += dt;
 
         // Sky
-        int wantClouds = Weather switch { Weather.Storm => 7, Weather.Rain => 6, _ => Night ? 2 : 3 } + (Mood == Mood.Maxed ? 3 : 0);
+        int wantClouds = Bare ? 0 : Weather switch { Weather.Storm => 7, Weather.Rain => 6, _ => Night ? 2 : 3 } + (Mood == Mood.Maxed ? 3 : 0);
         while (clouds.Count < wantClouds)
             clouds.Add(NewCloud(w, h, scattered: time < 1 || clouds.Count == 0));
         double windy = Weather == Weather.Storm ? 3 : 1;
@@ -221,7 +237,7 @@ public sealed partial class PixelScene : FrameworkElement
         if (shootAge >= 0 && (shootAge += dt) > 0.7) shootAge = -1;
 
         // Clawd
-        double minX = Math.Max(w * 0.36, SkyLeft + 8), maxX = Math.Max(minX, w - MascotWidth - 4);
+        double minX = MinX, maxX = Math.Max(minX, w - MascotWidth - 4);
         if (double.IsNaN(x)) x = Math.Round(w * 0.62 - MascotWidth / 2);
         if (trick != Trick.Story || story?.Roam != true) x = Math.Clamp(x, minX, maxX);
         legFrame = 0;
@@ -471,7 +487,7 @@ public sealed partial class PixelScene : FrameworkElement
     {
         if (fly == null)
         {
-            if (!Night && Weather == Weather.Clear && Mood != Mood.Maxed && time >= nextFly)
+            if (!Bare && !Night && Weather == Weather.Clear && Mood != Mood.Maxed && time >= nextFly)
                 fly = new Butterfly { X = w + 6, Y = Math.Round(h * 0.3) };
             return;
         }
@@ -573,8 +589,13 @@ public sealed partial class PixelScene : FrameworkElement
             StartTrick(Trick.Dizzy, 2.6);
             return;
         }
+        // A double-click plays his story, unless someone else wants it (the taskbar strip opens the dashboard)
+        if (combo == 2 && DoubleClicked != null)
+        {
+            DoubleClicked();
+            return;
+        }
         if (trick == Trick.Dizzy) return;
-        // A double-click plays his story
         if (combo == 2 && Mood != Mood.Maxed && !(Mood == Mood.Sleeping && Asleep))
         {
             strollTo = double.NaN;
@@ -713,7 +734,7 @@ public sealed partial class PixelScene : FrameworkElement
         double w = ActualWidth, h = ActualHeight;
         if (w <= 0 || h <= 0) return;
 
-        dc.DrawEllipse(Horizon, null, new Point(w * 0.55, h), w * 0.6, 30);
+        if (!Bare) dc.DrawEllipse(Horizon, null, new Point(w * 0.55, h), w * 0.6, 30);
 
         if (SkyLeft > 0) dc.PushClip(new RectangleGeometry(new Rect(SkyLeft, 0, Math.Max(0, w - SkyLeft), h)));
         if (Night)
@@ -739,8 +760,8 @@ public sealed partial class PixelScene : FrameworkElement
         if (SkyLeft > 0) dc.Pop();
 
         double cx = Math.Round(x) + MascotWidth / 2;
-        if (Mood == Mood.Working) dc.DrawEllipse(WorkGlow, null, new Point(cx, h), 80, 30);
-        else if (Mood == Mood.Maxed) dc.DrawEllipse(MaxedGlow, null, new Point(cx, h), 80, 26);
+        if (!Bare && Mood == Mood.Working) dc.DrawEllipse(WorkGlow, null, new Point(cx, h), 80, 30);
+        else if (!Bare && Mood == Mood.Maxed) dc.DrawEllipse(MaxedGlow, null, new Point(cx, h), 80, 26);
 
         foreach (var p in puffs)
         {

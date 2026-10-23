@@ -8,7 +8,7 @@ using System.Windows.Media;
 namespace ClaudeSessions;
 
 /// <summary>
-/// The gear in the dashboard header: weather city and units, and which mascot to show.
+/// The gear in the dashboard header: weather city and units, which mascot to show and whether he walks on the taskbar.
 /// Every change applies straight away; Done just closes.
 /// </summary>
 public partial class SettingsDialog : Window
@@ -19,6 +19,7 @@ public partial class SettingsDialog : Window
 
     public event Action<MascotKind>? MascotChanged;
     public event Action? UnitChanged;
+    public event Action<bool>? TaskbarChanged;
     /// <summary>"Update now": the dashboard downloads it and restarts.</summary>
     public event Action? UpdateRequested;
 
@@ -30,6 +31,7 @@ public partial class SettingsDialog : Window
         this.updater = updater;
 
         (settings.Fahrenheit ? FahrenheitButton : CelsiusButton).IsChecked = true;
+        (settings.MascotOnTaskbar ? TaskbarOnButton : TaskbarOffButton).IsChecked = true;
         foreach (var (kind, label) in Mascot.Choices)
         {
             var picture = new Image
@@ -135,6 +137,13 @@ public partial class SettingsDialog : Window
         settings.Fahrenheit = fahrenheit;
         settings.Save();
         UnitChanged?.Invoke();
+    }
+
+    void Taskbar_Checked(object sender, RoutedEventArgs e)
+    {
+        if (settings == null) return; // XAML checks one before the constructor has run
+        bool on = TaskbarOnButton.IsChecked == true;
+        if (on != settings.MascotOnTaskbar) TaskbarChanged?.Invoke(on);
     }
 
     /// <summary>For --snapshot: the panel rendered off-screen, no network.</summary>

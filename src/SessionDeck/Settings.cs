@@ -35,6 +35,8 @@ sealed class Settings
     /// <summary>Who lives in the banner, the widget and the icons.</summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public MascotKind Mascot { get; set; } = MascotKind.Dib;
+    /// <summary>The mascot also walks along the top of the taskbar on the main monitor.</summary>
+    public bool MascotOnTaskbar { get; set; } = true;
     /// <summary>Where the weather is for; detected from your internet address and refreshed daily.</summary>
     public WeatherPlace? WeatherPlace { get; set; }
     /// <summary>Show temperatures in °F; the forecast itself always comes in °C.</summary>

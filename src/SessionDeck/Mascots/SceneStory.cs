@@ -72,7 +72,7 @@ public sealed partial class PixelScene
         public double Top => scene.MascotTop(scene.ActualHeight);
         public double Ground => scene.ActualHeight;
         public double SceneWidth => scene.ActualWidth;
-        public double MinX => Math.Max(scene.ActualWidth * 0.36, scene.SkyLeft + 8);
+        public double MinX => scene.MinX;
         public double Time => scene.time;
         public string Note => scene.SessionNote;
         public bool Flipped => scene.Flipped;

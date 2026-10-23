@@ -40,6 +40,7 @@ public partial class MainWindow : Window
     readonly Updater updater = new();
     Version? announced; // the release the tray has already popped up about
     readonly UsageWidget widget;
+    TaskbarMascot? taskbarMascot; // while he walks on the taskbar
     RunnerWindow? game;
     TokenStats? tokenStats;
     (int, bool) shownIcon = (-1, false);
@@ -144,6 +145,7 @@ public partial class MainWindow : Window
         timer.Tick += async (_, _) => await Refresh();
         if (offscreen) return;
         TopmostGuard.Attach(this);
+        ShowTaskbarMascot();
         usage.Start();
         weather.Start();
         timer.Start();
@@ -262,14 +264,19 @@ public partial class MainWindow : Window
         UpdateEmptyText();
         game?.ShowSessions(needYou, working);
         BannerScene.SessionNote = PixelScene.NoteFor(needYou, working);
+        taskbarMascot?.Scene.SessionNote = BannerScene.SessionNote;
 
-        // The mascot (widget and banner): "!" for questions and approvals, scuttling while working, hops when one finishes
+        // The mascot (widget, banner and taskbar): "!" for questions and approvals, scuttling while working, hops when one finishes
         this.working = working;
         questions = items.Count(i => i.Status is SessionStatus.NeedsYou or SessionStatus.Check);
         var active = items.Where(i => i.Status is SessionStatus.NeedsYou or SessionStatus.Check or SessionStatus.YourTurn or SessionStatus.Working)
             .OrderBy(i => i.Rank).ThenByDescending(i => i.LastActivity).ToList();
         widget.ShowSessions(questions, working, done, active, finished);
-        if (finished > 0) BannerScene.Celebrate();
+        if (finished > 0)
+        {
+            BannerScene.Celebrate();
+            taskbarMascot?.Scene.Celebrate();
+        }
         RenderBanner();
 
         string tip = needYou > 0 ? $"{needYou} session(s) need you · {working} working" : $"Session Deck · {working} working";
@@ -572,6 +579,7 @@ public partial class MainWindow : Window
         BannerScene.Night = night;
         BannerScene.Weather = UsageLook.WeatherFor(usage.Status);
         BannerScene.Mood = UsageLook.MoodFor(report, questions, working, night);
+        taskbarMascot?.Scene.Mood = BannerScene.Mood;
     }
 
     void RenderToday(TodayStats today)
@@ -627,6 +635,7 @@ public partial class MainWindow : Window
         var dialog = new SettingsDialog(settings, weather, updater) { Owner = this };
         dialog.MascotChanged += SetMascot;
         dialog.UnitChanged += RenderWeather;
+        dialog.TaskbarChanged += SetTaskbarMascot;
         dialog.UpdateRequested += () => _ = InstallUpdate();
         if (updater.LastChecked is not { } at || DateTime.Now - at > TimeSpan.FromHours(1)) _ = updater.CheckAsync();
         dialog.ShowDialog();
@@ -748,6 +757,31 @@ public partial class MainWindow : Window
         WidgetButton.IsChecked = on;
     }
 
+    void SetTaskbarMascot(bool on)
+    {
+        settings.MascotOnTaskbar = on;
+        settings.Save();
+        ShowTaskbarMascot();
+    }
+
+    /// <summary>Puts the mascot on the taskbar or takes him off, as the settings say.</summary>
+    void ShowTaskbarMascot()
+    {
+        if (offscreen || settings.MascotOnTaskbar == (taskbarMascot != null)) return;
+        if (taskbarMascot != null)
+        {
+            taskbarMascot.Close();
+            taskbarMascot = null;
+            return;
+        }
+        taskbarMascot = new TaskbarMascot(Mascot.For(settings.Mascot));
+        taskbarMascot.DashboardRequested += ShowFromTray;
+        taskbarMascot.HideRequested += () => SetTaskbarMascot(false);
+        taskbarMascot.Scene.SessionNote = BannerScene.SessionNote;
+        taskbarMascot.Scene.Mood = BannerScene.Mood;
+        taskbarMascot.Show();
+    }
+
     void SetMascot(MascotKind kind)
     {
         settings.Mascot = kind;
@@ -755,6 +789,7 @@ public partial class MainWindow : Window
         var mascot = Mascot.For(kind);
         BannerScene.Mascot = mascot;
         widget.Mascot = mascot;
+        taskbarMascot?.Scene.Mascot = mascot;
         tray?.Mascot = kind;
         game?.SetMascot(kind);
         Icon = MascotIcon.Source(mascot, 32, shownIcon.Item1 < 0 ? 0 : shownIcon.Item1, shownIcon.Item2);
@@ -975,6 +1010,7 @@ public partial class MainWindow : Window
         usage.Stop();
         SaveBounds();
         widget.Close();
+        taskbarMascot?.Close();
         tray?.Dispose();
         Close();
         Application.Current.Shutdown();
