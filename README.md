@@ -37,9 +37,9 @@ Session Deck reads the transcripts Claude Code writes on your PC and works out w
 | ⚪ **Done** | Finished and already checked |
 
 - Sessions are shown as cards, sorted so the ones that need you come first. Click a card to jump straight to that session in the Claude desktop app.
-- Filter by project, by time range (2 h, 8 h, 24 h, 3 days, 7 days) or hide finished sessions.
+- Filter by environment, by time range (2 h, 8 h, 24 h, 3 days, 7 days) or hide finished sessions.
 - A **Today** strip shows how many sessions and turns you ran and how long Claude worked.
-- A **Tokens** view charts token use per project or per session (donut, bars, treemap or timeline), with cache reads on or off.
+- A **Tokens** view charts token use per environment or per session (donut, bars, treemap or timeline), with cache reads on or off.
 - Windows notifications when a session needs you or finishes.
 
 ### A usage widget on your desktop
@@ -70,9 +70,16 @@ Sixteen pixel mascots live in the banner, the widget and the tray icon. Each one
   <img src="docs/images/settings.png" width="320" alt="Settings: weather and mascot">
 </p>
 
-### A runner game while you wait
+### Games while you wait
 
-Play a one-button runner with your mascot while your sessions work: jump over bugs, merge conflicts and coffee spills. The game pauses and tells you as soon as a session needs you. There's a daily course too.
+Six small games star your mascot while your sessions work. Each one pauses and tells you as soon as a session needs you, and each has a daily course that's the same for everyone all day. Your mascot's power works in every game.
+
+- **Runner**: a fast one-button runner. Jump bugs and coffee spills, short-hop under lag spikes, and keep up as it speeds up.
+- **Debug Dungeon**: a turn-based crawl down floors of bugs. Nothing moves until you do, so an interruption costs nothing.
+- **Merge Panic**: falling blocks of code. Commit rows before the merge conflicts push up from below.
+- **Ship It**: bounce up the pipeline from build to prod, and stay ahead of the CI timeout.
+- **Context Defense**: build linters, test suites and type checkers to stop bugs reaching your context window.
+- **Daily Diff**: find the changes between two versions of some code before the clock runs out.
 
 <p align="center">
   <img src="docs/images/runner.gif" width="640" alt="Runner game">
@@ -139,7 +146,7 @@ dotnet publish src/SessionDeck -c Release -r win-x64 --self-contained true -p:Pu
 | `src/SessionDeck/Windows` | The dashboard, usage widget, token view and dialogs |
 | `src/SessionDeck/Controls` | Tray icon, menus and charts |
 | `src/SessionDeck/Mascots` | The pixel mascots, their scenes and stories |
-| `src/SessionDeck/Runner` | The runner game |
+| `src/SessionDeck/Runner` | The games and their window |
 | `docs/images` | README screenshots |
 
 ### Command-line flags
@@ -151,10 +158,11 @@ dotnet publish src/SessionDeck -c Release -r win-x64 --self-contained true -p:Pu
 | `--dashboard <file.png>` | Render the dashboard filled with made-up sessions to PNG, then exit (reads none of yours) |
 | `--snapshot <dir>` | Render every widget demo state and the settings dialog to PNG, then exit |
 | `--runner <dir> [--daily]` | Record the runner game playing itself, frame by frame, then exit |
+| `--games <dir>` | Let every game play itself for a while, saving a few frames each, then run the runner's autopilot on 200 courses and write `report.txt` |
 | `--stories <dir>` / `--signatures <dir>` | Render each mascot's story or signature move, frame by frame, then exit |
 | `--token-charts <dir>` | Render the token charts from your own logs to PNG, then exit |
 | `--dump <file>` | Write one session scan as JSON, then exit (for troubleshooting) |
-| `--mascot <name>` | Which mascot to draw for `--dashboard`, `--snapshot`, `--runner` and `--write-icon` |
+| `--mascot <name>` | Which mascot to draw for `--dashboard`, `--snapshot`, `--runner`, `--games` and `--write-icon` |
 | `--write-icon <file.ico>` | Regenerate the app icon from the mascot |
 
 ## License

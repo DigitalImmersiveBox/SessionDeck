@@ -6,12 +6,13 @@ release/
 artifacts/
 *.pdb
 
-# Offscreen renders from the app's debug flags
-snapshots/
-signatures/
-stories/
-runner/
-token-charts/
+# Offscreen renders from the app's debug flags, at the repo root only (runner/ would also match src/SessionDeck/Runner on Windows)
+/snapshots/
+/signatures/
+/stories/
+/runner/
+/games/
+/token-charts/
 project-icons.png
 sessions-dump.json
 

@@ -28,10 +28,10 @@
     </DockPanel>
 
     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="-4,12,0,0">
-      <RadioButton x:Name="ProjectsChip" Style="{StaticResource ChipToggle}" GroupName="tokenScope" Content="Projects"
-                   Checked="Scope_Checked" ToolTip="Tokens per project (all projects)"/>
+      <RadioButton x:Name="ProjectsChip" Style="{StaticResource ChipToggle}" GroupName="tokenScope" Content="Environments"
+                   Checked="Scope_Checked" ToolTip="Tokens per environment (all environments)"/>
       <RadioButton x:Name="SessionsChip" Style="{StaticResource ChipToggle}" GroupName="tokenScope" Content="Sessions"
-                   Checked="Scope_Checked" ToolTip="Tokens per session (only the project picked on the left, if any)"/>
+                   Checked="Scope_Checked" ToolTip="Tokens per session (only the environment picked on the left, if any)"/>
       <Border Width="1" Background="#2A2D33" Margin="8,3,10,3"/>
       <ToggleButton x:Name="CacheChip" Style="{StaticResource ChipToggle}" Checked="Cache_Changed" Unchecked="Cache_Changed"
                     ToolTip="Count cache reads: the context Claude re-reads on every turn. They are usually over 90 % of all tokens; turn this off to compare the new work only.">

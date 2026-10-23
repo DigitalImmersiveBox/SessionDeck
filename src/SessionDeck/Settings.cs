@@ -39,13 +39,18 @@ sealed class Settings
     public WeatherPlace? WeatherPlace { get; set; }
     /// <summary>Show temperatures in °F; the forecast itself always comes in °C.</summary>
     public bool Fahrenheit { get; set; }
-    /// <summary>Best runner score for each mascot, by mascot name.</summary>
-    public Dictionary<string, int> RunnerBest { get; set; } = new();
-    /// <summary>The runner plays the day's course (the same all day) instead of a new one each run.</summary>
+    /// <summary>
+    /// Best score in each game for each mascot, by "game:mascot". These started over when the runner got
+    /// harder; its old, easier scores were under RunnerBest and are dropped.
+    /// </summary>
+    public Dictionary<string, int> GameBest { get; set; } = new();
+    /// <summary>The games play the day's course (the same all day) instead of a new one each run.</summary>
     public bool RunnerDaily { get; set; }
-    /// <summary>Best score on the daily course, any mascot, and the day (yyyy-MM-dd) it was for.</summary>
-    public int RunnerDailyBest { get; set; }
-    public string RunnerDailyDate { get; set; } = "";
+    /// <summary>Best score on each game's daily course, any mascot, and the day (yyyy-MM-dd) they're for.</summary>
+    public Dictionary<string, int> DailyBest { get; set; } = new();
+    public string DailyDate { get; set; } = "";
+    /// <summary>The game the game window opens on.</summary>
+    public string Game { get; set; } = "runner";
     public int Version { get; set; }
     /// <summary>Made up for an off-screen render (--dashboard): never saved over your real settings.</summary>
     [JsonIgnore]

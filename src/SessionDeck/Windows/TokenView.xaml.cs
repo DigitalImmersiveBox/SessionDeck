@@ -85,7 +85,7 @@ public partial class TokenView : UserControl
         return name == "No folder" ? (name, "") : (name, cwd.TrimEnd('\\', '/'));
     }
 
-    string Hint => settings.TokenSessions ? "Click a session to open it in Claude" : "Click a project to see its sessions";
+    string Hint => settings.TokenSessions ? "Click a session to open it in Claude" : "Click an environment to see its sessions";
 
     void Render()
     {
@@ -133,14 +133,14 @@ public partial class TokenView : UserControl
             var buckets = new long[slices[0].Buckets.Length];
             foreach (var s in rest)
                 for (int i = 0; i < buckets.Length; i++) buckets[i] += s.Buckets[i];
-            slices.Add(new TokenSlice("other", "Other", Count(rest.Count, bySession ? "more session" : "more project"),
+            slices.Add(new TokenSlice("other", "Other", Count(rest.Count, bySession ? "more session" : "more environment"),
                 rest.Sum(s => s.Value), buckets, null));
         }
         Paint(slices);
         foreach (var s in slices) s.Share = total > 0 ? (double)s.Value / total : 0;
 
         string range = stats.Window.TotalHours <= 24 ? $"{stats.Window.TotalHours:0} H" : $"{stats.Window.TotalDays:0} DAYS";
-        string scope = !bySession ? "ALL PROJECTS" : filterName != null ? filterName.ToUpperInvariant() : "ALL SESSIONS";
+        string scope = !bySession ? "ALL ENVIRONMENTS" : filterName != null ? filterName.ToUpperInvariant() : "ALL SESSIONS";
         Heading.Text = $"TOKENS · LAST {range} · {scope}";
         TotalText.Text = Tokens.Short(total);
         TotalUnit.Text = cache ? "tokens" : "tokens, without cache reads";

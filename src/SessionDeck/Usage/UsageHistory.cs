@@ -10,7 +10,7 @@ public sealed record UsagePoint(DateTime At, double Percent);
 
 /// <summary>
 /// Every 5-hour usage reading (one per fetch, every 2 min), kept for two days in
-/// %APPDATA%\SessionDeck\usage-history.json. Feeds the strip's chart and the pace forecast.
+/// %APPDATA%\SessionDeck\usage-history.json. Feeds the pace forecast.
 /// </summary>
 public sealed class UsageHistory
 {
@@ -30,8 +30,6 @@ public sealed class UsageHistory
 
     /// <summary>Made-up readings for --dashboard: not loaded from disk (and never added to, so never saved).</summary>
     public UsageHistory(IEnumerable<UsagePoint> readings) => points = readings.ToList();
-
-    public IReadOnlyList<UsagePoint> Points => points;
 
     public void Add(UsageReport report)
     {
@@ -73,20 +71,5 @@ public sealed class UsageHistory
             return ($"At this pace: limit at {limitAt.ToLocalTime():HH:mm} (reset {resetClock})", true);
         double atReset = Math.Min(100, session.Percent + rate * (reset - now).TotalMinutes);
         return ($"At this pace: ~{atReset:0}% by reset at {resetClock}", false);
-    }
-
-    /// <summary>Chart points for the last <paramref name="span"/>: x and y in 0..1, with a break after gaps over 10 min.</summary>
-    public List<SparkPoint> Chart(DateTime now, TimeSpan span)
-    {
-        var from = now - span;
-        var result = new List<SparkPoint>();
-        DateTime? previous = null;
-        foreach (var p in points.Where(p => p.At >= from))
-        {
-            bool gap = previous is { } prev && p.At - prev > TimeSpan.FromMinutes(10);
-            result.Add(new SparkPoint((p.At - from) / span, Math.Clamp(p.Percent, 0, 100) / 100, gap));
-            previous = p.At;
-        }
-        return result;
     }
 }

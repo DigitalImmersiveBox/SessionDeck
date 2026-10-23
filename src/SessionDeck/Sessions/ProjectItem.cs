@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace ClaudeSessions;
 
-/// <summary>One row in the projects panel. Path is null for the "All projects" row.</summary>
+/// <summary>One row in the environments panel. Path is null for the "All environments" row.</summary>
 public sealed class ProjectItem : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -22,12 +22,12 @@ public sealed class ProjectItem : INotifyPropertyChanged
     public bool HasDetail => Detail != null;
     public bool IsHidden { get; }
     public double RowOpacity => IsHidden ? 0.45 : 1.0;
-    public string HideMenuText => IsHidden ? "Show project again" : "Hide project";
+    public string HideMenuText => IsHidden ? "Show environment again" : "Hide environment";
     public bool CanStart => Path != null;
-    public string Tooltip => Path != null ? $"Show only sessions in {Path}" : "Show sessions from every project";
+    public string Tooltip => Path != null ? $"Show only sessions in {Path}" : "Show sessions from every environment";
     public string NewTooltip => $"New Claude session in {Name}";
 
-    /// <summary>Null for "All projects" and until the icon is known.</summary>
+    /// <summary>Null for "All environments" and until the icon is known.</summary>
     public ProjectIconLook? Look
     {
         get => look;

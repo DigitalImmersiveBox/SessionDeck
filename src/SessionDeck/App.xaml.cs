@@ -94,7 +94,17 @@ public partial class App : Application
         if (runner >= 0)
         {
             string dir = e.Args.Length > runner + 1 ? e.Args[runner + 1] : "runner";
-            new RunnerWindow(new Settings { Mascot = mascot, RunnerDaily = e.Args.Contains("--daily") }).SaveAutopilotFrames(dir, 14);
+            new RunnerWindow(new Settings { Mascot = mascot, RunnerDaily = e.Args.Contains("--daily"), Transient = true }).SaveAutopilotFrames(dir, 14);
+            Shutdown();
+            return;
+        }
+
+        // --games <dir>: every game playing itself for a while, a few frames each, then the runner's autopilot on 200 courses; writes report.txt
+        int games = Array.IndexOf(e.Args, "--games");
+        if (games >= 0)
+        {
+            string dir = e.Args.Length > games + 1 ? e.Args[games + 1] : "games";
+            new RunnerWindow(new Settings { Mascot = mascot, Transient = true }).CheckGames(dir, 200);
             Shutdown();
             return;
         }

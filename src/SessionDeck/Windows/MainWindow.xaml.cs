@@ -23,7 +23,7 @@ public partial class MainWindow : Window
 {
     readonly ObservableCollection<SessionItem> items = new();
     readonly ObservableCollection<ProjectItem> projects = new();
-    readonly ProjectItem allProjects = new("All projects", null) { IsSelected = true };
+    readonly ProjectItem allProjects = new("All environments", null) { IsSelected = true };
     ProjectItem selectedProject;
     IReadOnlyList<ProjectEntry> projectSource = Array.Empty<ProjectEntry>();
     string projectsKey = "";
@@ -42,8 +42,6 @@ public partial class MainWindow : Window
     readonly UsageWidget widget;
     RunnerWindow? game;
     TokenStats? tokenStats;
-    int chartCount;
-    DateTime chartAt;
     (int, bool) shownIcon = (-1, false);
     static readonly Brush Muted = Ink.Of(0xA9, 0xAC, 0xB4);
     readonly ListCollectionView view;
@@ -556,22 +554,18 @@ public partial class MainWindow : Window
         BannerPercent.Text = Math.Round(pct).ToString("0");
         BannerPercent.Foreground = UsageLook.Accent(pct, working);
         BannerReset.Text = UsageLook.ResetText(report, usage.Error, now);
+        BannerSignIn.Visibility = usage.NeedsSignIn ? Visibility.Visible : Visibility.Collapsed;
+        BannerRenewButton.IsEnabled = !usage.RenewingSignIn;
+        BannerRenewButton.Content = usage.RenewingSignIn ? "Refreshing…" : "Refresh sign-in";
         var weeks = UsageLook.Weeks(report, now);
         if (BannerWeeks.ItemsSource is not IEnumerable<WeekRow> shown || !shown.SequenceEqual(weeks))
             BannerWeeks.ItemsSource = weeks;
         BannerStatusDot.Fill = UsageLook.StatusBrush(usage.Status);
         BannerStatus.Text = usage.Status.Description;
 
-        // The chart only changes with a new reading (every 2 min) or as time slides by
-        if (usage.History.Points.Count != chartCount || now - chartAt > TimeSpan.FromMinutes(1))
-        {
-            chartCount = usage.History.Points.Count;
-            chartAt = now;
-            BannerSpark.Show(usage.History.Chart(now, TimeSpan.FromHours(12)), UsageLook.Accent(pct, working));
-        }
         var (forecast, warning) = usage.History.Forecast(report, now);
-        BannerForecast.Text = forecast;
-        BannerForecast.Foreground = warning ? UsageLook.Amber : Muted;
+        UsageForecast.Text = forecast;
+        UsageForecast.Foreground = warning ? UsageLook.Amber : Muted;
 
         bool night = UsageLook.IsNight;
         BannerScene.SkyLeft = BannerText.ActualWidth + 40;
@@ -722,27 +716,22 @@ public partial class MainWindow : Window
             game.Activate();
             return;
         }
-        game = new RunnerWindow(settings);
+        // Pinned like the dashboard, or it opens behind a pinned dashboard
+        game = new RunnerWindow(settings) { Topmost = Topmost };
         game.OpenSessionRequested += Open;
         game.Closed += (_, _) => game = null;
         game.ShowSessions(questions + items.Count(i => i.Status == SessionStatus.YourTurn), working);
         game.Show();
     }
 
-    // The weather sits in the top-right corner (Clawd walks under it); as the window narrows
-    // the chart drops out first, then the weather
+    // The weather sits in the top-right corner (Clawd walks under it); it drops out when the window gets too narrow
     void Banner_SizeChanged(object sender, SizeChangedEventArgs e) => LayoutBanner(e.NewSize.Width);
 
     void LayoutBanner(double width)
     {
-        const double fixedPart = 16 + 118 + 24 + 190, gap = 20, chartWidth = 185 + 24;
+        const double fixedPart = 16 + 118 + 24 + 190, gap = 20;
         double weatherWidth = BannerWeather.ActualWidth > 0 ? BannerWeather.ActualWidth + 12 : 260;
-        double room = width - fixedPart - gap;
-        bool showWeather = room >= weatherWidth;
-        if (showWeather) room -= weatherWidth;
-        bool showChart = room >= chartWidth;
-        BannerWeather.Visibility = showWeather ? Visibility.Visible : Visibility.Collapsed;
-        BannerChart.Visibility = showChart ? Visibility.Visible : Visibility.Collapsed;
+        BannerWeather.Visibility = width - fixedPart - gap >= weatherWidth ? Visibility.Visible : Visibility.Collapsed;
     }
 
     void Widget_Changed(object sender, RoutedEventArgs e) => SetWidgetVisible(WidgetButton.IsChecked == true);
@@ -835,6 +824,20 @@ public partial class MainWindow : Window
 
     // ---- Header -------------------------------------------------------------
 
+    void RefreshAll_Click(object sender, RoutedEventArgs e)
+    {
+        usage.RefreshNow();
+        _ = Refresh();
+    }
+
+    void SignIn_Click(object sender, RoutedEventArgs e)
+    {
+        if (!ClaudeCli.OpenLogin())
+            MessageBox.Show("Claude Code (claude) isn't installed on this PC, so there's nothing to sign in with.", "Session Deck");
+    }
+
+    void RenewSignIn_Click(object sender, RoutedEventArgs e) => _ = usage.RenewSignIn();
+
     void Range_Checked(object sender, RoutedEventArgs e)
     {
         if (sender is RadioButton { Tag: string tag } && int.TryParse(tag, out int hours) && hours != settings.WindowHours)
@@ -921,6 +924,7 @@ public partial class MainWindow : Window
     void Pin_Changed(object sender, RoutedEventArgs e)
     {
         Topmost = PinButton.IsChecked == true;
+        game?.Topmost = Topmost;
         settings.Topmost = Topmost;
         settings.Save();
         tray?.Topmost = Topmost;

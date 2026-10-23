@@ -41,6 +41,32 @@
       </Setter>
     </Style>
 
+    <!-- Refresh sign-in / Sign in… in the usage banner -->
+    <Style x:Key="BannerAction" TargetType="Button">
+      <Setter Property="Foreground" Value="#E6E7EA"/>
+      <Setter Property="Background" Value="#2C2D33"/>
+      <Setter Property="FontSize" Value="11.5"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Margin" Value="0,0,6,0"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="5" Padding="9,2,9,3">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Opacity" Value="0.85"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="#8A8D96"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
     <Style x:Key="ProjectButton" TargetType="Button">
       <Setter Property="Foreground" Value="#B9BCC4"/>
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -113,14 +139,19 @@
       <StackPanel>
         <DockPanel>
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+            <Button Style="{StaticResource IconButton}" Content="&#xE72C;"
+                    ToolTip="Refresh: read your sessions and plan usage again now" Click="RefreshAll_Click"/>
+            <Button Style="{StaticResource IconButton}" Content="&#xE77B;"
+                    ToolTip="Sign in: open a terminal with `claude auth login` to sign in to Claude Code in your browser"
+                    Click="SignIn_Click"/>
             <ToggleButton x:Name="WidgetButton" Style="{StaticResource IconButton}" Content="&#xE7F4;"
                           ToolTip="Usage widget: a small always-on window with your limits and active sessions"
                           Checked="Widget_Changed" Unchecked="Widget_Changed"/>
             <ToggleButton x:Name="TokensButton" Style="{StaticResource IconButton}" Content="&#xEB05;"
-                          ToolTip="Tokens: how many tokens each project and session used in this time range"
+                          ToolTip="Tokens: how many tokens each environment and session used in this time range"
                           Checked="Tokens_Changed" Unchecked="Tokens_Changed"/>
             <ToggleButton x:Name="ProjectsButton" Style="{StaticResource IconButton}" Content="&#xE8B7;"
-                          ToolTip="Projects: filter by project or start a new session"
+                          ToolTip="Environments: filter by environment or start a new session"
                           Checked="Projects_Changed" Unchecked="Projects_Changed"/>
             <Button Style="{StaticResource IconButton}" Content="&#xE73E;" ToolTip="Mark all finished sessions as seen (questions stay until you answer)" Click="MarkAllSeen_Click"/>
             <ToggleButton x:Name="PinButton" Style="{StaticResource IconButton}" Content="&#xE718;" ToolTip="Always on top"
@@ -138,6 +169,9 @@
           <Border x:Name="TodayBlock" Margin="32,2,16,0" Padding="16,0,0,0" BorderBrush="#2A2D33" BorderThickness="1,0,0,0"
                   VerticalAlignment="Top" HorizontalAlignment="Left">
             <StackPanel>
+              <!-- When the 5-hour limit resets, and where this pace is heading -->
+              <TextBlock x:Name="UsageForecast" FontSize="11.5" Foreground="#A9ACB4" Margin="0,0,0,4" TextTrimming="CharacterEllipsis"
+                         ToolTip="5-hour limit: when it resets, and where your pace over this window is heading"/>
               <TextBlock TextTrimming="CharacterEllipsis"
                          ToolTip="Time Claude spent working since midnight, added up across sessions (sessions running at the same time add up)">
                 <Run Text="TODAY" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"/>
@@ -166,8 +200,10 @@
       </StackPanel>
     </Border>
 
-    <!-- Usage banner: Clawd's world across the full width, plan limits and Claude status on the left -->
-    <Grid x:Name="Banner" DockPanel.Dock="Top" Height="104" Background="#17181C" ClipToBounds="True"
+    <!-- Usage banner: Clawd's world across the full width, plan limits and Claude status on the left.
+         MinHeight, not Height: the sign-in buttons or a wrapped error make the left column taller, and a fixed
+         height clipped it top and bottom -->
+    <Grid x:Name="Banner" DockPanel.Dock="Top" MinHeight="104" Background="#17181C" ClipToBounds="True"
           SizeChanged="Banner_SizeChanged">
       <Border BorderBrush="#22252A" BorderThickness="0,0,0,1"/>
       <local:PixelScene x:Name="BannerScene" Margin="0,0,0,1"/>
@@ -179,6 +215,13 @@
             <TextBlock Text="%" FontFamily="Segoe UI Light" FontSize="18" Foreground="#C9CACF" VerticalAlignment="Top" Margin="4,9,0,0"/>
           </StackPanel>
           <TextBlock x:Name="BannerReset" FontSize="11.5" Foreground="#A9ACB4" MaxWidth="230" TextWrapping="Wrap"/>
+          <!-- Shown only when the login is the problem, like in the widget -->
+          <StackPanel x:Name="BannerSignIn" Orientation="Horizontal" Margin="0,6,0,0" Visibility="Collapsed">
+            <Button x:Name="BannerRenewButton" Style="{StaticResource BannerAction}" Background="#C15F3C" Click="RenewSignIn_Click"
+                    ToolTip="Let Claude Code renew its sign-in in the background (uses no plan usage)"/>
+            <Button Style="{StaticResource BannerAction}" Content="Sign in…" Click="SignIn_Click"
+                    ToolTip="Open a terminal with `claude auth login` to sign in again in your browser"/>
+          </StackPanel>
         </StackPanel>
         <StackPanel Width="190" Margin="24,0,0,0" VerticalAlignment="Center">
           <ItemsControl x:Name="BannerWeeks" Focusable="False">
@@ -207,17 +250,6 @@
                        MaxWidth="180" TextTrimming="CharacterEllipsis"/>
           </StackPanel>
         </StackPanel>
-
-        <!-- 5-hour use over the last 12 h, and where this pace is heading -->
-        <StackPanel x:Name="BannerChart" Width="185" Margin="24,0,0,0" VerticalAlignment="Center">
-          <DockPanel>
-            <TextBlock DockPanel.Dock="Right" Text="last 12 h" FontSize="11" Foreground="#6E717B"/>
-            <TextBlock Text="5-HOUR USE" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"/>
-          </DockPanel>
-          <local:Sparkline x:Name="BannerSpark" Height="30" Margin="0,6,0,5"
-                           ToolTip="Your 5-hour limit use over the last 12 hours (dashed lines: 0 % and 100 %)"/>
-          <TextBlock x:Name="BannerForecast" FontSize="11.5" Foreground="#A9ACB4" TextTrimming="CharacterEllipsis"/>
-        </StackPanel>
       </StackPanel>
 
       <!-- Local weather, compact in the top-right corner; Clawd walks underneath it -->
@@ -242,7 +274,7 @@
       </Border>
     </Grid>
 
-    <!-- Credits: dib logo and maker line in the bottom-left corner, under the projects and the cards -->
+    <!-- Credits: dib logo and maker line in the bottom-left corner, under the environments and the cards -->
     <Border DockPanel.Dock="Bottom" Padding="16,6,16,7" BorderBrush="#22252A" BorderThickness="0,1,0,0">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
         <Path Height="11" Stretch="Uniform" Fill="#8A8D96" VerticalAlignment="Center"
@@ -252,15 +284,15 @@
       </StackPanel>
     </Border>
 
-    <!-- Projects: click a name to show only its sessions; + starts a new Claude session there -->
+    <!-- Environments: click a name to show only its sessions; + starts a new Claude session there -->
     <Border x:Name="ProjectsPanel" DockPanel.Dock="Left" Width="220" BorderBrush="#22252A" BorderThickness="0,0,1,0"
             Background="#121316">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Text="PROJECTS" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"
+        <TextBlock DockPanel.Dock="Top" Text="ENVIRONMENTS" FontSize="11" FontWeight="SemiBold" Foreground="#7D808A"
                    Margin="16,14,12,6"/>
         <ToggleButton x:Name="ShowHiddenButton" DockPanel.Dock="Bottom" Style="{StaticResource ChipToggle}"
                       HorizontalAlignment="Left" Margin="12,6,12,10" Visibility="Collapsed"
-                      ToolTip="Show the projects you hid (right-click one to show it again)"
+                      ToolTip="Show the environments you hid (right-click one to show it again)"
                       Checked="ShowHidden_Changed" Unchecked="ShowHidden_Changed"/>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <ItemsControl x:Name="ProjectList">

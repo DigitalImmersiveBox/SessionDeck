@@ -21,6 +21,7 @@ public sealed class UsageMonitor
 
     readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
     DateTime nextUsage, nextStatus, lastAutoRenew;
+    DateTime? checkedAfterReset; // the 5-hour reset we've already fetched again for
     bool fetchingUsage, fetchingStatus;
 
     public UsageReport? Usage { get; private set; }
@@ -74,6 +75,12 @@ public sealed class UsageMonitor
     void Tick()
     {
         var now = DateTime.UtcNow;
+        // The 5-hour window just reset: check now rather than show the old figure until the next fetch (once per reset)
+        if (Usage?.Session?.ResetsAt is { } reset && reset <= now && Usage.FetchedAt < reset && checkedAfterReset != reset)
+        {
+            checkedAfterReset = reset;
+            nextUsage = now;
+        }
         if (now >= nextUsage && !fetchingUsage) _ = FetchUsage();
         if (now >= nextStatus && !fetchingStatus) _ = FetchStatus();
         Changed?.Invoke();
@@ -139,7 +146,10 @@ static class UsageLook
     public static readonly Brush Red = Ink.Of(0xF0, 0x71, 0x71);
     public static readonly Brush Gray = Ink.Of(0x6B, 0x70, 0x7B);
 
-    public static double Percent(UsageReport? usage) => Math.Clamp(usage?.Session?.Percent ?? 0, 0, 100);
+    public static double Percent(UsageReport? usage) => Math.Clamp(Current(usage?.Session, DateTime.UtcNow), 0, 100);
+
+    /// <summary>A limit's use now: nothing once its reset time has passed, even if no fetch has said so yet.</summary>
+    static double Current(Limit? limit, DateTime now) => limit == null || limit.ResetsAt <= now ? 0 : limit.Percent;
 
     public static Brush Accent(double pct, int working) =>
         pct >= 90 ? Red : pct >= 70 ? Amber : working > 0 ? Blue : Green;
@@ -150,16 +160,18 @@ static class UsageLook
 
     public static string ResetText(UsageReport? usage, string? error, DateTime now) =>
         usage == null ? error ?? "Loading usage…"
+        : usage.Session?.ResetsAt is { } over && over <= now ? "5-hour window has reset · " + (error ?? "updating…")
         : usage.Session?.ResetsAt is { } reset ? "resets in " + Until(reset, now)
         : usage.Session == null ? "No 5-hour limit on this plan"
         : "5-hour window starts with your next message";
 
     public static List<WeekRow> Weeks(UsageReport? usage, DateTime now) =>
         (usage?.Weekly ?? Array.Empty<Limit>())
-            .Select(l => new WeekRow(l.Label,
-                l.ResetsAt is { } r ? $"{l.Percent:0}%  ·  {Until(r, now)}" : $"{l.Percent:0}%",
-                new GridLength(Math.Clamp(l.Percent, 0, 100), GridUnitType.Star),
-                new GridLength(100 - Math.Clamp(l.Percent, 0, 100), GridUnitType.Star)))
+            .Select(l => (Limit: l, Pct: Math.Clamp(Current(l, now), 0, 100)))
+            .Select(w => new WeekRow(w.Limit.Label,
+                w.Limit.ResetsAt is { } r ? (r <= now ? "0%  ·  reset" : $"{w.Pct:0}%  ·  {Until(r, now)}") : $"{w.Pct:0}%",
+                new GridLength(w.Pct, GridUnitType.Star),
+                new GridLength(100 - w.Pct, GridUnitType.Star)))
             .ToList();
 
     public static Brush StatusBrush(ServiceStatus status) => status.Health switch
