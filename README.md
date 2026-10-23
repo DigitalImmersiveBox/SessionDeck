@@ -62,6 +62,8 @@ The sky in the widget follows the real world: day and night, the local weather (
 
 Sixteen pixel mascots live in the banner, the widget and the tray icon. Each one has its own little story and a signature move.
 
+Your mascot can also walk along the top of your taskbar. Click him for a trick, double-click to open the dashboard, or drag him around. He hides while a full-screen app is running, and you can turn him off in Settings.
+
 <p align="center">
   <img src="docs/images/mascots.gif" width="640" alt="All the mascots">
 </p>
